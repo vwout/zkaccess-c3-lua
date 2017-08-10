@@ -120,6 +120,24 @@ local function bytes_to_num(byte_array)
   return num
 end
 
+function byte_array_to_time(byte_array)
+  local seconds_since_2000 = bytes_to_num(byte_array)
+  
+  local time_t = {}
+  time_t.sec = math.fmod(seconds_since_2000, 60)
+  seconds_since_2000 = math.floor(seconds_since_2000 / 60)
+  time_t.min = math.fmod(seconds_since_2000, 60)
+  seconds_since_2000 = math.floor(seconds_since_2000 / 60)
+  time_t.hour = math.fmod(seconds_since_2000, 24)
+  seconds_since_2000 = math.floor(seconds_since_2000 / 24)
+  time_t.day = math.fmod(seconds_since_2000, 31) + 1
+  seconds_since_2000 = math.floor(seconds_since_2000 / 31)
+  time_t.month = math.fmod(seconds_since_2000, 12) + 1
+  seconds_since_2000 = math.floor(seconds_since_2000 / 12)
+  time_t.year = seconds_since_2000 + 2000
+ 
+  return os.time(time_t)
+end
 
 local function dump_message_arr(what, message)
   local s = ''
@@ -139,6 +157,8 @@ local connected = false
 local sessionID = {}
 local requestNr = 0
 
+
+M.byte_array_to_time = byte_array_to_time
 
 local function M_get_message_header(data_arr)
   assert(data_arr[1] == C3_MESSAGE_START)
