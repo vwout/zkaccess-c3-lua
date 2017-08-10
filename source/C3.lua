@@ -11,6 +11,7 @@ local C3_MESSAGE_END        = 0x55
 local C3_PROTOCOL_VERSION   = 0x01
 local C3_COMMAND_CONNECT    = { request=0x76, reply=0xC8 }
 local C3_COMMAND_DISCONNECT = { request=0x02, reply=0xC8 }
+local C3_COMMAND_RTLOG      = { request=0x0B, reply=0xC8 }
 
 -- constants and tables
 local C3_CONTROL_OPERATION_OUTPUT         = 1
@@ -147,6 +148,72 @@ local function dump_message_arr(what, message)
   print(string.format(". %-40s", what), s)
 end
 
+
+
+-- An RTLog is a binary message of 16 bytes send by the C3 access panel. 
+-- All multi-byte values are stored as Little-endian.
+--
+-- Byte:              0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+--                    01:4f:86:00:99:92:98:00:04:01:00:00:a5:ad:ad:21
+-- Cardno (byte 4-7):             |
+--                                99:92:98:00 => (big endian:) 00989299 = 9999001
+-- Pin (byte 0-3):    |
+--                    01:4f:86:00 => (big endian:) 00864f01 = 8802049
+-- Verified (byte 8):                         |
+--                                            04
+-- DoorID (byte 9):                              |
+--                                               01
+-- EventType (byte 10):                             |
+--                                                  00
+-- InOutState (byte 11):                               |
+--                                                     00
+--                                                        |
+-- Time_second (byte 12-15)                               a5:ad:ad:21 => (big endian:) 21ADADA5 = 2017-7-30 16:51:49
+local function RTEventRecord()
+  -- the new instance
+  local self = {
+    card_no      = 0,
+    pin          = 0,
+    verified     = 0,
+    door_id      = 0,
+    event_type   = 0,
+    in_out_state = C3_INOUT_STATUS_NONE,
+    time_second  = 0
+  }
+
+  function self.from_byte_array(data_arr, from_idx)
+    self.card_no      = bytes_to_num({ data_arr[from_idx + 7], data_arr[from_idx + 6], data_arr[from_idx + 5], data_arr[from_idx + 4] })
+    self.pin          = bytes_to_num({ data_arr[from_idx + 3], data_arr[from_idx + 2], data_arr[from_idx + 1], data_arr[from_idx + 0] })
+    self.verified     = data_arr[from_idx + 8]
+    self.door_id      = data_arr[from_idx + 9]
+    self.event_type   = data_arr[from_idx + 10]
+    self.in_out_state = data_arr[from_idx + 11]
+    self.time_second  = byte_array_to_time({ data_arr[from_idx + 15], data_arr[from_idx + 14], data_arr[from_idx + 13], data_arr[from_idx + 12] })
+    
+    return self
+  end
+
+  function self.print()
+    for key,value in pairs(self) do
+      if type(value) ~= 'function' then
+        if key == "time_second" then
+          print("", string.format("%-10s", key), value, os.date("%c", value))
+        elseif key == "in_out_state" then
+          print("", string.format("%-10s", key), value, C3_INOUT_STATUS[value])
+        elseif key == "event_type" then
+          print("", string.format("%-10s", key), value, C3_EVENT_TYPE[value])
+        elseif key == "verified" then
+          print("", string.format("%-10s", key), value, C3_VERIFIED_MODE[value])
+        else
+          print("", string.format("%-10s", key), value)
+        end
+      end
+    end
+  end
+
+  -- return the instance
+  return self
+end
 
 -- Module declaration
 local M = {_TYPE='module', _NAME='C3', _VERSION='0.1'}
@@ -296,6 +363,30 @@ function M.disconnect()
     sessionID = {}
     requestNr = 0
   end
+end
+
+function M.rtlog_decode(data_arr)
+  -- One RT log is 16 bytes
+  -- Ensure the data array is not empty and a multiple of 16 
+  assert(data_arr)
+  assert(math.fmod(#data_arr, 16) == 0)
+  
+  local rtlogs = {}
+
+  for i = 1, #data_arr, 16 do
+    local rt_event = RTEventRecord()
+    rt_event.from_byte_array(data_arr, i)
+    table.insert(rtlogs, rt_event)
+  end
+  
+  return rtlogs
+end
+
+function M.getRTLog()
+  assert(connected)
+  
+  local size, data_arr = M_sock_send_receive_data(C3_COMMAND_RTLOG)
+  return M.rtlog_decode(data_arr)
 end
 
 return M
