@@ -12,6 +12,37 @@ print("SessionId: " .. C3.SessionId())
 C3.disconnect()
 ```
 
+## Protocol
+The C3 access panels communicate using RS485 or TCP/IP. The connection is optionally secured by a password.
+The wire protocol for the access panels is binary, with the following datagram both for requests (from client to equipment) and responses:
+
+Byte        | 0      | 1       | 2       | 3      | 4       | 5,6,7,8, ...  | n-2, n-1 | n
+------------|--------|---------|---------|--------|---------|---------------|----------|-----
+**Meaning** | Start  | Version | Command | Length | Unknown | Data          | Checksum | End
+**Value**   | `0xAA` | `0x01`  |         |        | `0x00`  |               |          | `0x55`
+
+The start bytes 0, 1, 4 and last byte have a fixed value. 
+The *Command* is one of the following (only listing commands supported by this library)
+
+Code   | Command
+-------|--------
+`0x76` | Connect (session initiation)
+`0x02` | Disconnection (session end)
+`0x05` | Device control command
+`0x0B` | Retrieve realtime log
+`0xC8` | Response (confirm successful execution of command)
+
+The *Length* field contains the number of bytes of the *Data* field.
+The *Data* field (as of byte 5) typically has at least 4 bytes:
+- Session Id (2 bytes, in Little Endian encoding): The session identifier assigned by the equipment in response to a session initiation command
+- Message Number (2 bytes, in Little Endian encoding): A message sequence number that starts from 0 (the session initiation command) and is increased with every command send
+
+Byte        | 5             | 6             | 7              | 8              | ...
+------------|---------------|---------------|----------------|----------------|--------
+**Meaning** | SessionId Lsb | SessionId Msb | Message Nr Lsb | Message Nr Msb | Payload
+
+The *Checksum* is a CRC-16 checksum calculated over the full message excluding the *Start* and *End* byte.
+
 ## API
 
 ### connect
@@ -19,7 +50,8 @@ C3.disconnect()
 connect(host, port)
 ```
 
-The method is used to connect a C3 device. This method must be called before any other method and initializes a C3 session. Returns true in case of a successful connection.
+The method is used to connect a C3 device using TCP. RS485 is not supported. Neither is using a password to secure the connection. This method must be called before any other method and initializes a C3 session. 
+Returns true in case of a successful connection.
 
 ### disconnect
 ```
