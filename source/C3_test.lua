@@ -4,6 +4,17 @@ local C3 = require("C3")
 
 module("c3_test", lunit.testcase, package.seeall)
 
+function assert_table_equal(expected, actual)
+  assert_table(expected)
+  assert_table(actual)
+  
+  assert_equal(#expected, #actual)
+  for i = 1, #expected do
+    assert_equal(expected[i], actual[i], "Mismatch at entry " .. i)
+  end
+end
+
+
 function test_c3_time_decode()
   assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), C3.byte_array_to_time({0x21, 0xad, 0x99, 0x30}))
   assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), C3.byte_array_to_time(reverse_array({0x30, 0x99, 0xad, 0x21})))
@@ -44,3 +55,30 @@ function test_c3_rtlog_decode()
   end
 end
 
+function test_c3_device_control_message_output()
+  local output_operation = C3.ControlDeviceOutput(1, 1, 200)
+  assert_table(output_operation)
+  assert_table_equal({0x01, 0x01, 0x01, 0xc8, 0x00}, output_operation.to_byte_array())
+  output_operation.print()
+end
+
+function test_c3_device_control_message_cancel()
+  local output_operation = C3.ControlDeviceCancelAlarm()
+  assert_table(output_operation)
+  assert_table_equal({0x02, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
+  output_operation.print()
+end
+
+function test_c3_device_control_message_restart()
+  local output_operation = C3.ControlDeviceRestartDevice()
+  assert_table(output_operation)
+  assert_table_equal({0x03, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
+  output_operation.print()
+end
+
+function test_c3_device_control_message_nostate()
+  local output_operation = C3.ControlDeviceNOState(2, 1)
+  assert_table(output_operation)
+  assert_table_equal({0x04, 0x02, 0x01, 0x00, 0x00}, output_operation.to_byte_array())
+  output_operation.print()
+end

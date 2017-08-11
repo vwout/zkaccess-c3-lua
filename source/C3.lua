@@ -11,6 +11,7 @@ local C3_MESSAGE_END        = 0x55
 local C3_PROTOCOL_VERSION   = 0x01
 local C3_COMMAND_CONNECT    = { request=0x76, reply=0xC8 }
 local C3_COMMAND_DISCONNECT = { request=0x02, reply=0xC8 }
+local C3_COMMAND_CONTROL    = { request=0x05, reply=0xC8 }
 local C3_COMMAND_RTLOG      = { request=0x0B, reply=0xC8 }
 
 -- constants and tables
@@ -25,7 +26,7 @@ local C3_CONTROL_OPERATION  = { [C3_CONTROL_OPERATION_OUTPUT]         = "Output 
 
 local C3_CONTROL_OUTPUT_ADDRESS_DOOR_OUTPUT = 1
 local C3_CONTROL_OUTPUT_ADDRESS_AUX_OUTPUT  = 2
-local C3_CONTROL_OUTPUT_ADDRESS  = { [C3_CONTROL_OUTPUT_ADDRESS_DOOR_OUTPUT] = "Door ouptput",
+local C3_CONTROL_OUTPUT_ADDRESS  = { [C3_CONTROL_OUTPUT_ADDRESS_DOOR_OUTPUT] = "Door output",
                                      [C3_CONTROL_OUTPUT_ADDRESS_AUX_OUTPUT]  = "Auxiliary output" }
                                 
 local C3_VERIFIED_MODE      = { [1]   = "Only finger",
@@ -148,6 +149,139 @@ local function dump_message_arr(what, message)
   print(string.format(". %-40s", what), s)
 end
 
+-- A ControlDevice is a binary message of 5 bytes send to the C3 access panel.
+-- It changes the states of the doors, auxilary relays and alarms.
+-- All multi-byte values are stored as Little-endian.
+--
+-- Byte       0  1  2  3  4
+--            01:01:01:c8:00
+-- Operation: | 
+--            01 => 1 (1: output, 2: cancel alarm, 3: restart device, 4: enable/disable normal open state)
+-- Param 1:      |
+-- Param 2:         |
+-- Param 3:            |
+-- Param 4:               |
+--
+-- The meaning of the parameters is depending on the Operation code. Param 4 is reserved for future use (defaults to 0)
+-- Operation 1: Output operation
+--   Param 1: Door number or auxiliary output number
+--   Param 2: The address type of output operation (1: Door ouptput, 2: Auxiliary output)
+--   Param 3: Duration of the open operation, only for address type = 1 (door output). 0: disable, 255: normal open state, 1~254: normal open duration
+-- Operation 2: Cancel alarm
+--   Param 1: 0 (null)
+--   Param 2: 0 (null)
+--   Param 3: 0 (null)
+-- Operation 3: Restart device
+--   Param 1: 0 (null)
+--   Param 2: 0 (null)
+--   Param 3: 0 (null)
+-- Operation 3: Enable/disable normal open state
+--   Param 1: Door number
+--   Param 2: Enable / disable (0: disable, 1: enable'
+--   Param 3: 0 (null)
+local function ControlDeviceBase(_operation, _param1, _param2, _param3)
+  -- the new instance
+  local self = {
+    operation = _operation or 0,
+    param1    = _param1 or 0,
+    param2    = _param2 or 0,
+    param3    = _param3 or 0,
+    param4    = 0
+  }
+
+  function self.from_byte_array(data_arr, from_idx)
+    self.operation = data_arr[from_idx + 0]
+    self.param1    = data_arr[from_idx + 1]
+    self.param2    = data_arr[from_idx + 2]
+    self.param3    = data_arr[from_idx + 3]
+    self.param4    = data_arr[from_idx + 4]
+    
+    return self
+  end
+
+  function self.to_byte_array()
+    data = { self.operation, self.param1, self.param2, self.param3, self.param4 }
+    return data
+  end
+
+  function self.print()
+    print("ControlDevice Command:")
+    for key,value in pairs(self) do
+      if type(value) ~= 'function' then
+        if key == "operation" then
+          print("", string.format("%-10s", key), value, C3_CONTROL_OPERATION[value])
+        else
+          print("", string.format("%-10s", key), value)
+        end
+      end
+    end
+  end
+
+  -- return the instance
+  return self
+end
+
+function ControlDeviceOutput(door_number, address, duration)
+  local self = ControlDeviceBase(C3_CONTROL_OPERATION_OUTPUT, door_number, address, duration)
+  
+  function self.print()
+    print("ControlDeviceOutput Command:")
+    for key,value in pairs(self) do
+      if type(value) ~= 'function' then
+        if key == "operation" then
+          print("", string.format("%-10s", key), value, C3_CONTROL_OPERATION[value])
+        elseif key == "param1" then
+          print("", string.format("%-10s", key), value, "Door number")
+        elseif key == "param2" then
+          print("", string.format("%-10s", key), value, C3_CONTROL_OUTPUT_ADDRESS[value])
+        elseif key == "param3" then
+          print("", string.format("%-10s", key), value, "Duration")
+        else
+          print("", string.format("%-10s", key), value)
+        end
+      end
+    end
+  end
+  
+  -- return the instance
+  return self
+end
+
+function ControlDeviceCancelAlarm()
+  local self = ControlDeviceBase(C3_CONTROL_OPERATION_CANCEL_ALARM)
+  -- return the instance
+  return self
+end
+
+function ControlDeviceNOState(door_number, enable_disable)
+  local self = ControlDeviceBase(C3_CONTROL_OPERATION_ENDIS_NO_STATE, door_number, enable_disable)
+  
+  function self.print()
+    print("ControlDeviceNOState Command:")
+    for key,value in pairs(self) do
+      if type(value) ~= 'function' then
+        if key == "operation" then
+          print("", string.format("%-10s", key), value, C3_CONTROL_OPERATION[value])
+        elseif key == "param1" then
+          print("", string.format("%-10s", key), value, "Door number")
+        elseif key == "param2" then
+          print("", string.format("%-10s", key), value, value and "Enable" or "Disable")
+        else
+          print("", string.format("%-10s", key), value)
+        end
+      end
+    end
+  end
+
+  -- return the instance
+  return self
+end
+
+function ControlDeviceRestartDevice()
+  local self = ControlDeviceBase(C3_CONTROL_OPERATION_RESTART_DEVICE)
+  -- return the instance
+  return self
+end
 
 
 -- An RTLog is a binary message of 16 bytes send by the C3 access panel. 
@@ -226,6 +360,10 @@ local requestNr = 0
 
 
 M.byte_array_to_time = byte_array_to_time
+M.ControlDeviceOutput = ControlDeviceOutput
+M.ControlDeviceCancelAlarm = ControlDeviceCancelAlarm
+M.ControlDeviceRestartDevice = ControlDeviceRestartDevice
+M.ControlDeviceNOState = ControlDeviceNOState
 
 local function M_get_message_header(data_arr)
   assert(data_arr[1] == C3_MESSAGE_START)
@@ -353,6 +491,8 @@ function M.connect(host, port)
     sessionID[2] = data_arr[1] --First byte is LSB
     connected = true
   end
+  
+  return connected
 end
 
 function M.disconnect()
@@ -388,5 +528,11 @@ function M.getRTLog()
   local size, data_arr = M_sock_send_receive_data(C3_COMMAND_RTLOG)
   return M.rtlog_decode(data_arr)
 end
+
+function M.controlDevice(control_command_object)
+  assert(connected)
+
+  local size, data_arr = M_sock_send_receive_data(C3_COMMAND_CONTROL, control_command_object.to_byte_array)
+end  
 
 return M
