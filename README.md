@@ -16,12 +16,12 @@ C3.disconnect()
 The C3 access panels communicate using RS485 or TCP/IP. The connection is optionally secured by a password.
 The wire protocol for the access panels is binary, with the following datagram both for requests (from client to equipment) and responses:
 
-Byte        | 0      | 1       | 2       | 3      | 4       | 5,6,7,8, ...  | n-2, n-1 | n
-------------|--------|---------|---------|--------|---------|---------------|----------|-----
-**Meaning** | Start  | Version | Command | Length | Unknown | Data          | Checksum | End
-**Value**   | `0xAA` | `0x01`  |         |        | `0x00`  |               |          | `0x55`
+Byte        | 0      | 1       | 2       | 3          | 4          | 5,6,7,8, ...  | n-2, n-1 | n
+------------|--------|---------|---------|------------|------------|---------------|----------|-----
+**Meaning** | Start  | Version | Command | Length Lsb | Length Msb | Data          | Checksum | End
+**Value**   | `0xAA` | `0x01`  |         |            |            |               |          | `0x55`
 
-The start bytes 0, 1, 4 and last byte have a fixed value. 
+The start bytes 0, 1 and last byte have a fixed value. 
 The *Command* is one of the following (only listing commands supported by this library)
 
 Code   | Command
@@ -32,7 +32,7 @@ Code   | Command
 `0x0B` | Retrieve realtime log
 `0xC8` | Response (confirm successful execution of command)
 
-The *Length* field contains the number of bytes of the *Data* field.
+The *Length* field (2 bytes, in Little Endian encoding) contains the number of bytes of the *Data* field.
 The *Data* field (as of byte 5) typically has at least 4 bytes:
 - Session Id (2 bytes, in Little Endian encoding): The session identifier assigned by the equipment in response to a session initiation command
 - Message Number (2 bytes, in Little Endian encoding): A message sequence number that starts from 0 (the session initiation command) and is increased with every command send

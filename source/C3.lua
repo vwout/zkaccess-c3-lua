@@ -6,13 +6,14 @@ local CRC = require("crc_16")
 local PORT_DEFAULT = 4370
 
 -- COMMANDS
-local C3_MESSAGE_START      = 0xAA
-local C3_MESSAGE_END        = 0x55
-local C3_PROTOCOL_VERSION   = 0x01
-local C3_COMMAND_CONNECT    = { request=0x76, reply=0xC8 }
-local C3_COMMAND_DISCONNECT = { request=0x02, reply=0xC8 }
-local C3_COMMAND_CONTROL    = { request=0x05, reply=0xC8 }
-local C3_COMMAND_RTLOG      = { request=0x0B, reply=0xC8 }
+local C3_MESSAGE_START       = 0xAA
+local C3_MESSAGE_END         = 0x55
+local C3_PROTOCOL_VERSION    = 0x01
+local C3_COMMAND_CONNECT     = { request=0x76, reply=0xC8 }
+local C3_COMMAND_DISCONNECT  = { request=0x02, reply=0xC8 }
+local C3_COMMAND_TABLECONFIG = { request=0x06, reply=0xC8 }
+local C3_COMMAND_CONTROL     = { request=0x05, reply=0xC8 }
+local C3_COMMAND_RTLOG       = { request=0x0B, reply=0xC8 }
 
 -- constants and tables
 local C3_CONTROL_OPERATION_OUTPUT         = 1
@@ -357,6 +358,7 @@ local sock
 local connected = false
 local sessionID = {}
 local requestNr = 0
+local tableConfig = {}
 
 
 M.byte_array_to_time = byte_array_to_time
@@ -366,12 +368,12 @@ M.ControlDeviceRestartDevice = ControlDeviceRestartDevice
 M.ControlDeviceNOState = ControlDeviceNOState
 
 local function M_get_message_header(data_arr)
+  assert(#data_arr > 5)
   assert(data_arr[1] == C3_MESSAGE_START)
   assert(data_arr[2] == C3_PROTOCOL_VERSION)
-  assert(data_arr[5] == 0)
   
   local command = data_arr[3]
-  local size    = data_arr[4]
+  local size    = (data_arr[5] * 255) + data_arr[4]
   
   return command, size
 end
@@ -402,10 +404,10 @@ local function M_sock_send_data(command, data)
   
   message = { C3_PROTOCOL_VERSION,
               command.request or 0x00,
-              message_length,
-              0x00,
-              sessionID[2] or 0x00, --LSB of sessionId first
-              sessionID[1] or 0x00, --MSB of sessionId second
+              CRC.lsb(message_length),
+              CRC.msb(message_length),
+              sessionID[2] or 0x00,    --LSB of sessionId first
+              sessionID[1] or 0x00,    --MSB of sessionId second
               CRC.lsb(requestNr),
               CRC.msb(requestNr)
             }
