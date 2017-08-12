@@ -507,6 +507,52 @@ function M.disconnect()
   end
 end
 
+function M.tableconfig_decode(data_arr)
+  -- The table config response is a list of strings separated by a newline (0x0A) character.
+  -- Each line starts with the table and its identifier, followed by the fields and their index and type (i=integer, s=string)
+  --   user=1,UID=i1,CardNo=i2,Pin=i3,Password=s4,Group=i5,StartTime=i6,EndTime=i7,Name=s8,SuperAuthorize=i9
+  --   userauthorize=2,Pin=i1,AuthorizeTimezoneId=i2,AuthorizeDoorId=i3
+
+  local data_str = arr_to_str(data_arr)
+  local table_configs = {}
+  
+  -- Split the string by whitespace, iterating over the lines
+  for iter in string.gmatch(data_str, "%S+") do
+    local name = ''
+    local config = {
+      id     = 0,
+      fields = {}
+    }
+  
+    -- Extract the key=value pairs from the line
+    for k, v in string.gmatch(iter, "(%w+)=(%w+)") do
+       if name == '' then
+         name = k
+         config.id = tonumber(v)
+       else
+         local index = tonumber(string.sub(v, 2))
+         config.fields[index] = {
+           name = k,
+           fmt  = string.sub(v, 1, 1)
+         }
+       end
+    end
+    
+    table_configs[name] = config
+  end
+  
+  return table_configs
+end
+
+function M.getDeviceTableConfig()
+  if next(tableConfig) == nil then
+    local size, data_arr = M_sock_send_receive_data(C3_COMMAND_TABLECONFIG)
+    tableConfig = M.tableconfig_decode(data_arr)
+  end
+  
+  return tableConfig
+end
+
 function M.rtlog_decode(data_arr)
   -- One RT log is 16 bytes
   -- Ensure the data array is not empty and a multiple of 16 
