@@ -6,14 +6,14 @@ local CRC = require("crc_16")
 local PORT_DEFAULT = 4370
 
 -- COMMANDS
-local C3_MESSAGE_START       = 0xAA
-local C3_MESSAGE_END         = 0x55
-local C3_PROTOCOL_VERSION    = 0x01
-local C3_COMMAND_CONNECT     = { request=0x76, reply=0xC8 }
-local C3_COMMAND_DISCONNECT  = { request=0x02, reply=0xC8 }
-local C3_COMMAND_TABLECONFIG = { request=0x06, reply=0xC8 }
-local C3_COMMAND_CONTROL     = { request=0x05, reply=0xC8 }
-local C3_COMMAND_RTLOG       = { request=0x0B, reply=0xC8 }
+local C3_MESSAGE_START        = 0xAA
+local C3_MESSAGE_END          = 0x55
+local C3_PROTOCOL_VERSION     = 0x01
+local C3_COMMAND_CONNECT      = { request=0x76, reply=0xC8 }
+local C3_COMMAND_DISCONNECT   = { request=0x02, reply=0xC8 }
+local C3_COMMAND_DATATABLECFG = { request=0x06, reply=0xC8 }
+local C3_COMMAND_CONTROL      = { request=0x05, reply=0xC8 }
+local C3_COMMAND_RTLOG        = { request=0x0B, reply=0xC8 }
 
 -- constants and tables
 local C3_CONTROL_OPERATION_OUTPUT         = 1
@@ -358,7 +358,7 @@ local sock
 local connected = false
 local sessionID = {}
 local requestNr = 0
-local tableConfig = {}
+local dataTableConfig = {}
 
 
 M.byte_array_to_time = byte_array_to_time
@@ -507,7 +507,7 @@ function M.disconnect()
   end
 end
 
-function M.tableconfig_decode(data_arr)
+function M.datatableconfig_decode(data_arr)
   -- The table config response is a list of strings separated by a newline (0x0A) character.
   -- Each line starts with the table and its identifier, followed by the fields and their index and type (i=integer, s=string)
   --   user=1,UID=i1,CardNo=i2,Pin=i3,Password=s4,Group=i5,StartTime=i6,EndTime=i7,Name=s8,SuperAuthorize=i9
@@ -544,13 +544,13 @@ function M.tableconfig_decode(data_arr)
   return table_configs
 end
 
-function M.getDeviceTableConfig()
-  if next(tableConfig) == nil then
-    local size, data_arr = M_sock_send_receive_data(C3_COMMAND_TABLECONFIG)
-    tableConfig = M.tableconfig_decode(data_arr)
+function M.getDataTableConfig()
+  if next(dataTableConfig) == nil then
+    local size, data_arr = M_sock_send_receive_data(C3_COMMAND_DATATABLECFG)
+    dataTableConfig = M.datatableconfig_decode(data_arr)
   end
   
-  return tableConfig
+  return dataTableConfig
 end
 
 function M.rtlog_decode(data_arr)
