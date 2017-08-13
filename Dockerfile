@@ -1,10 +1,11 @@
-FROM ubuntu
+FROM ubuntu:16.04
 
 RUN apt-get update -y \
- && apt-get install -y \
+ && apt-get install --no-install-recommends -y \
     luajit \
     lua-bit32 \
-    luarocks
+    luarocks \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN luarocks install luasocket \
  && luarocks install lunit
