@@ -516,29 +516,46 @@ function M.datatableconfig_decode(data_arr)
   local data_str = arr_to_str(data_arr)
   local table_configs = {}
   
-  -- Split the string by whitespace, iterating over the lines
-  for iter in string.gmatch(data_str, "%S+") do
-    local name = ''
-    local config = {
-      id     = 0,
+  local function DataTableConfig(table_name, table_id)
+    local self = {
+      name   = table_name,
+      id     = table_id,
       fields = {}
     }
+    
+    function self.add_field(field_index, field_name, field_format)
+       local index = tonumber(field_index)
+
+       self.fields[index] = {
+         name = field_name,
+         fmt  = field_format
+       }
+    end
+    
+    function self.print()
+      print(string.format("Table %s (id: %d)", self.name, self.id))
+      for i,field in pairs(self.fields) do
+        print("", i, field.name, field.fmt == "i" and "Integer" or field.fmt == "s" and "String" or "Unknown")
+      end
+    end
+    
+    return self
+  end
+  
+  -- Split the string by whitespace, iterating over the lines
+  for iter in string.gmatch(data_str, "%S+") do
+    local config = {}
   
     -- Extract the key=value pairs from the line
     for k, v in string.gmatch(iter, "(%w+)=(%w+)") do
-       if name == '' then
-         name = k
-         config.id = tonumber(v)
+       if next(config) == nil then
+         config = DataTableConfig(k, tonumber(v))
        else
-         local index = tonumber(string.sub(v, 2))
-         config.fields[index] = {
-           name = k,
-           fmt  = string.sub(v, 1, 1)
-         }
+         config.add_field(string.sub(v, 2), k, string.sub(v, 1, 1))
        end
     end
     
-    table_configs[name] = config
+    table_configs[config.name] = config
   end
   
   return table_configs

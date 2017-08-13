@@ -50,7 +50,10 @@ function test_c3_tableconfig_decode()
   local configs = C3.datatableconfig_decode(raw_data)
 
   local config_count = 0
-  for _ in pairs(configs) do config_count = config_count + 1 end
+  for _,config in pairs(configs) do 
+    config.print()
+    config_count = config_count + 1
+  end
   assert_equal(13, config_count)
   assert_equal(1, configs['user'].id)
   assert_equal(5, configs['transaction'].id)
