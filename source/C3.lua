@@ -36,6 +36,7 @@ local C3_VERIFIED_MODE      = { [1]   = "Only finger",
                                 [11]  = "Card and password",
                                 [200] = "Others" }
 
+local C3_EVENT_TYPE_DOOR_ALARM_STATUS = 255
 local C3_EVENT_TYPE         = { [0]   = "Normal Punch Open",
                                 [1]   = "Punch during Normal Open Time Zone",
                                 [2]   = "First Card Normal Open (Punch Card)",
@@ -86,7 +87,7 @@ local C3_EVENT_TYPE         = { [0]   = "Normal Punch Open",
                                 [206] = "Device Start",
                                 [220] = "Auxiliary Input Disconnected",
                                 [221] = "Auxiliary Input Shorted",
-                                [255] = "Current door status and alarm status" }
+                                [C3_EVENT_TYPE_DOOR_ALARM_STATUS] = "Current door and alarm status" }
 
 local C3_INOUT_STATUS_ENTRY = 0
 local C3_INOUT_STATUS_EXIT  = 3
@@ -95,6 +96,12 @@ local C3_INOUT_STATUS       = { [C3_INOUT_STATUS_ENTRY] = "Entry",
                                 [C3_INOUT_STATUS_EXIT]  = "Exit",
                                 [C3_INOUT_STATUS_NONE]  = "None" }
 
+local C3_ALARM_STATUS       = { [0] = "None",
+                                [1] = "Alarm",
+                                [2] = "Door opening timeout" }
+local C3_DSS_STATUS         = { [0] = "No DSS",
+                                [1] = "Door closed",
+                                [2] = "Door open" }
 
 
 --- Returns HEX representation of num
@@ -286,6 +293,76 @@ end
 
 
 -- An RTLog is a binary message of 16 bytes send by the C3 access panel. 
+-- If the value of byte 10 (the event type) is 255, the RTLog is a Door/Alarm Realtime status.
+-- All multi-byte values are stored as Little-endian.
+--
+-- Byte:                    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+--                          01:4f:86:00:99:92:98:00:04:01:00:00:a5:ad:ad:21
+-- Alarm status (byte 4-7):             |
+--                                      99:92:98:00 => (big endian:) 00989299 = 9999001
+-- DSS status (byte 0-3):   |
+--                          01:4f:86:00 => (big endian:) 00864f01 = 8802049
+-- Verified (byte 8):                               |
+--                                                  04
+-- Unused (byte 9):                                    |
+--                                                     01
+-- EventType (byte 10):                                   |
+--                                                        00
+-- Unused (byte 11):                                         |
+--                                                           00
+--                                                              |
+-- Time_second (byte 12-15)                                     a5:ad:ad:21 => (big endian:) 21ADADA5 = 2017-7-30 16:51:49
+local function RTDAStatusRecord()
+  local self = {
+    alarm_status = 0,
+    dss_status   = 0,
+    verified     = 0,
+    event_type   = 0,
+    time_second  = 0
+  }
+
+  function self.from_byte_array(data_arr, from_idx)
+    self.alarm_status = { [1] = data_arr[from_idx + 4], [2] = data_arr[from_idx + 5], [3] = data_arr[from_idx + 6], [4] = data_arr[from_idx + 7] }
+    self.dss_status   = { [1] = data_arr[from_idx + 0], [2] = data_arr[from_idx + 1], [3] = data_arr[from_idx + 2], [4] = data_arr[from_idx + 3] }
+    self.verified     = data_arr[from_idx + 8]
+    self.event_type   = data_arr[from_idx + 10]
+    self.time_second  = byte_array_to_time({ data_arr[from_idx + 15], data_arr[from_idx + 14], data_arr[from_idx + 13], data_arr[from_idx + 12] })
+    
+    return self
+  end
+
+  function self.print()
+    for key,value in pairs(self) do
+      if type(value) ~= 'function' then
+        if key == "time_second" then
+          print("", string.format("%-10s", key), value, os.date("%c", value))
+        elseif key == "event_type" then
+          print("", string.format("%-10s", key), value, C3_EVENT_TYPE[value])
+        elseif key == "verified" then
+          print("", string.format("%-10s", key), value, C3_VERIFIED_MODE[value])
+        elseif key == "alarm_status" then
+          print("", string.format("%-10s", key))
+          for i,v in ipairs(value) do
+            print("", "", string.format("Door %-10i", i), v, C3_ALARM_STATUS[v])
+          end
+        elseif key == "dss_status" then
+          print("", string.format("%-10s", key))
+          for i,v in ipairs(value) do
+            print("", "", string.format("Door %-10i", i), v, C3_DSS_STATUS[v])
+          end
+        else
+          print("", string.format("%-10s", key), value)
+        end
+      end
+    end
+  end
+
+  -- return the instance
+  return self
+end
+
+-- An RTLog is a binary message of 16 bytes send by the C3 access panel. 
+-- If the value of byte 10 (the event type) is not 255, the RTLog is a Realtime Event.
 -- All multi-byte values are stored as Little-endian.
 --
 -- Byte:              0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -579,9 +656,15 @@ function M.rtlog_decode(data_arr)
   local rtlogs = {}
 
   for i = 1, #data_arr, 16 do
-    local rt_event = RTEventRecord()
-    rt_event.from_byte_array(data_arr, i)
-    table.insert(rtlogs, rt_event)
+    if data_arr[i + 10] == C3_EVENT_TYPE_DOOR_ALARM_STATUS then
+      local rt_status = RTDAStatusRecord()
+      rt_status.from_byte_array(data_arr, i)
+      table.insert(rtlogs, rt_status)
+    else
+      local rt_event = RTEventRecord()
+      rt_event.from_byte_array(data_arr, i)
+      table.insert(rtlogs, rt_event)
+    end
   end
   
   return rtlogs
