@@ -1,6 +1,8 @@
 -- Imports
 local socket = require("socket")
 local CRC = require("crc_16")
+require "utils"
+
 
 -- Defaults
 local PORT_DEFAULT = 4370
@@ -445,7 +447,7 @@ M.ControlDeviceRestartDevice = ControlDeviceRestartDevice
 M.ControlDeviceNOState = ControlDeviceNOState
 
 local function M_get_message_header(data_arr)
-  assert(#data_arr > 5)
+  assert(#data_arr >= 5)
   assert(data_arr[1] == C3_MESSAGE_START)
   assert(data_arr[2] == C3_PROTOCOL_VERSION)
   
