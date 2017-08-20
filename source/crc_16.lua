@@ -59,18 +59,6 @@ end
 local M_crc_16_byte = M.crc_16_byte
 
 
-function M.crc_16_byte_array(byte_array, crc)
-  crc = crc or CRC_START_16
-  
-  for _,byte in ipairs(byte_array) do
-    crc = M_crc_16_byte(byte, crc)
-  end
-  
-  return crc
-end
-local M_crc_16_byte_array = M.crc_16_byte_array
-
-
 function M.crc_16_string(str, crc)
   crc = crc or CRC_START_16
   
@@ -81,6 +69,22 @@ function M.crc_16_string(str, crc)
   return crc
 end
 local M_crc_16_string = M.crc_16_string
+
+
+function M.crc_16_byte_array(byte_array, crc)
+  crc = crc or CRC_START_16
+  
+  for _,byte in ipairs(byte_array) do
+    if type(byte) == 'string' then
+      crc = M_crc_16_string(byte, crc)
+    else
+      crc = M_crc_16_byte(byte, crc)
+    end
+  end
+  
+  return crc
+end
+local M_crc_16_byte_array = M.crc_16_byte_array
 
 
 function M.crc_16(data, crc)
