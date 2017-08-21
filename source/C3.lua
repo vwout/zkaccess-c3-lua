@@ -101,7 +101,7 @@ local C3_INOUT_STATUS       = { [C3_INOUT_STATUS_ENTRY] = "Entry",
 local C3_ALARM_STATUS       = { [0] = "None",
                                 [1] = "Alarm",
                                 [2] = "Door opening timeout" }
-local C3_DSS_STATUS         = { [0] = "No DSS",
+local C3_DSS_STATUS         = { [0] = "No Door Status Sensor",
                                 [1] = "Door closed",
                                 [2] = "Door open" }
 
@@ -324,8 +324,8 @@ local function RTDAStatusRecord()
   }
 
   function self.from_byte_array(data_arr, from_idx)
-    self.alarm_status = { [1] = data_arr[from_idx + 4], [2] = data_arr[from_idx + 5], [3] = data_arr[from_idx + 6], [4] = data_arr[from_idx + 7] }
-    self.dss_status   = { [1] = data_arr[from_idx + 0], [2] = data_arr[from_idx + 1], [3] = data_arr[from_idx + 2], [4] = data_arr[from_idx + 3] }
+    self.alarm_status = { [1] = data_arr[from_idx + 0], [2] = data_arr[from_idx + 1], [3] = data_arr[from_idx + 2], [4] = data_arr[from_idx + 3] }
+    self.dss_status   = { [1] = data_arr[from_idx + 4], [2] = data_arr[from_idx + 5], [3] = data_arr[from_idx + 6], [4] = data_arr[from_idx + 7] }
     self.verified     = data_arr[from_idx + 8]
     self.event_type   = data_arr[from_idx + 10]
     self.time_second  = byte_array_to_time({ data_arr[from_idx + 15], data_arr[from_idx + 14], data_arr[from_idx + 13], data_arr[from_idx + 12] })
@@ -396,8 +396,8 @@ local function RTEventRecord()
   }
 
   function self.from_byte_array(data_arr, from_idx)
-    self.card_no      = bytes_to_num({ data_arr[from_idx + 7], data_arr[from_idx + 6], data_arr[from_idx + 5], data_arr[from_idx + 4] })
-    self.pin          = bytes_to_num({ data_arr[from_idx + 3], data_arr[from_idx + 2], data_arr[from_idx + 1], data_arr[from_idx + 0] })
+    self.card_no      = bytes_to_num({ data_arr[from_idx + 3], data_arr[from_idx + 2], data_arr[from_idx + 1], data_arr[from_idx + 0] })
+    self.pin          = bytes_to_num({ data_arr[from_idx + 7], data_arr[from_idx + 6], data_arr[from_idx + 5], data_arr[from_idx + 4] })
     self.verified     = data_arr[from_idx + 8]
     self.door_id      = data_arr[from_idx + 9]
     self.event_type   = data_arr[from_idx + 10]
