@@ -151,12 +151,17 @@ function byte_array_to_time(byte_array)
   return os.time(time_t)
 end
 
+local debug_enabled = false    -- Internal flag to enable debugging, see M.set_debug()
+
 local function dump_message_arr(what, message)
   local s = ''
-  for _,byte in ipairs(message) do
-    s = s .. num2hex(byte) .. ' '
+  
+  if debug_enabled then
+    for _,byte in ipairs(message) do
+      s = s .. num2hex(byte) .. ' '
+    end
+    print(string.format(". %-40s", what), s)
   end
-  print(string.format(". %-40s", what), s)
 end
 
 -- A ControlDevice is a binary message of 5 bytes send to the C3 access panel.
@@ -601,6 +606,10 @@ local function M_sock_send_receive_data(command, send_data)
   end
   
   return size,receive_data
+end
+
+function M.set_debug(debug_on_off)
+  debug_enabled = debug_on_off
 end
 
 function M.SessionId()
