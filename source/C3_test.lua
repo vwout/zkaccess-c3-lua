@@ -97,6 +97,14 @@ function test_c3_rtlog_decode_status()
   local rtlogs = C3.rtlog_decode(rtlog_raw_data)
 
   assert_equal(2, #rtlogs)
+  assert_not_nil(next(rtlogs[1].get_alarms()))
+  assert_true(rtlogs[2].has_alarm())
+  assert_true(rtlogs[1].has_alarm(1))
+  assert_false(rtlogs[1].has_alarm(2))
+  assert_true(rtlogs[1].has_alarm(1, 1))
+  assert_true(rtlogs[1].has_alarm(1, 2))
+  assert_false(rtlogs[1].has_alarm(1, 3))
+
   for n,rtlog in pairs(rtlogs) do
     print(n)
     rtlog.print()

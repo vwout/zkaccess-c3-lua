@@ -333,6 +333,36 @@ local function RTDAStatusRecord()
     return self
   end
 
+  function self.get_alarms(door_nr)
+    local alarms = {}
+    
+    for i,status in ipairs(self.alarm_status) do
+      if door_nr == i or not door_nr then
+        for k,v in pairs(C3_ALARM_STATUS) do
+          if k ~= 0 then
+            if CRC.bit.band(status, k) == k then
+              table.insert(alarms, k)
+            end
+          end
+        end
+      end
+    end
+    
+    return alarms
+  end
+  
+  function self.has_alarm(door_nr, alarm_status)
+    local result = false
+    
+    for _,alarm in ipairs(self.get_alarms(door_nr)) do
+      if alarm == alarm_status or not alarm_status then
+        result = true
+      end
+    end
+    
+    return result
+  end
+  
   function self.print()
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
@@ -344,8 +374,27 @@ local function RTDAStatusRecord()
           print("", string.format("%-10s", key), value, C3_VERIFIED_MODE[value])
         elseif key == "alarm_status" then
           print("", string.format("%-10s", key))
+          
+          local function concat_if_in_bitset(value, tbl, str_arr)
+            local str_arr = str_arr or {}
+
+            if tbl[0] and value == 0 then
+              table.insert(str_arr, tbl[0])
+            else
+              for k,v in pairs(tbl) do
+                if k ~= 0 then
+                  if CRC.bit.band(value, k) == k then
+                    table.insert(str_arr, v)
+                  end
+                end
+              end
+            end
+            
+            return table.concat(str_arr, ", ")
+          end
+          
           for i,v in ipairs(value) do
-            print("", "", string.format("Door %-10i", i), v, C3_ALARM_STATUS[v])
+            print("", "", string.format("Door %-10i", i), v, concat_if_in_bitset(v, C3_ALARM_STATUS))
           end
         elseif key == "dss_status" then
           print("", string.format("%-10s", key))
@@ -515,6 +564,7 @@ end
 
 local function M_sock_receive_data(expected_command)
   -- Get the first 5 bytes
+  -- TODO: Replace assert by pcall and handle error
   local header_str, receive_status = assert(sock:receive(5))
   local header_arr = str_to_arr(header_str)
 
@@ -523,6 +573,7 @@ local function M_sock_receive_data(expected_command)
   assert(received_command == expected_command.reply)
 
   -- Get the message data and signature
+  -- TODO: Replace assert by pcall and handle error
   local payload_str, receive_status = assert(sock:receive(size + 3))
   local payload_arr = str_to_arr(payload_str, header_arr)
 
