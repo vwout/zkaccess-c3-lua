@@ -91,7 +91,11 @@ function test_c3_rtlog_decode_status()
   assert_true(rtlogs[1].has_alarm(1, 1))
   assert_true(rtlogs[1].has_alarm(1, 2))
   assert_false(rtlogs[1].has_alarm(1, 3))
-
+  assert_nil(rtlogs[1].is_open(1))
+  assert_nil(rtlogs[1].is_open(3))
+  assert_true(rtlogs[2].is_open(1))
+  assert_nil(rtlogs[2].is_open(2))
+  
   for n,rtlog in pairs(rtlogs) do
     print(n)
     rtlog.print()

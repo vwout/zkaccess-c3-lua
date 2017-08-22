@@ -101,9 +101,13 @@ local C3_INOUT_STATUS       = { [C3_INOUT_STATUS_ENTRY] = "Entry",
 local C3_ALARM_STATUS       = { [0] = "None",
                                 [1] = "Alarm",
                                 [2] = "Door opening timeout" }
-local C3_DSS_STATUS         = { [0] = "No Door Status Sensor",
-                                [1] = "Door closed",
-                                [2] = "Door open" }
+
+local C3_DSS_STATUS_UNKNOWN = 0
+local C3_DSS_STATUS_CLOSED  = 1
+local C3_DSS_STATUS_OPEN    = 2
+local C3_DSS_STATUS         = { [C3_DSS_STATUS_UNKNOWN] = "No Door Status Sensor",
+                                [C3_DSS_STATUS_CLOSED]  = "Door closed",
+                                [C3_DSS_STATUS_OPEN]    = "Door open" }
 
 
 --- Returns HEX representation of num
@@ -368,6 +372,19 @@ local function RTDAStatusRecord()
     return result
   end
   
+  function self.is_open(door_nr)
+    assert(door_nr)
+    
+    local open = nil
+    if self.dss_status[door_nr] == C3_DSS_STATUS_OPEN then
+      open = true
+    elseif self.dss_status[door_nr] == C3_DSS_STATUS_CLOSED then
+      open = false
+    end
+    
+    return open
+  end
+  
   function self.print()
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
@@ -624,7 +641,7 @@ function M.connect(host, port)
     sessionID = {}
     requestNr = 0
 
-    sock = socket.tcp()
+    sock = assert(socket.tcp())
     success, err = sock:connect(host, port)
     if success then
       sock:settimeout(2)
