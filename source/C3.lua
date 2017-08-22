@@ -487,7 +487,7 @@ end
 local M = {_TYPE='module', _NAME='C3', _VERSION='0.1'}
 
 -- Private member variables
-local sock
+local sock = nil            -- Socket for TCP connection to C3 panel
 local connected = false
 local sessionID = {}
 local requestNr = 0
@@ -560,6 +560,7 @@ local function M_sock_send_data(command, data)
   table.insert(message,    C3_MESSAGE_END)
   
   dump_message_arr("M_sock_send_data", message)
+  -- TODO: Replace assert by pcall and handle error
   bytes_written = assert(sock:send(arr_to_str(message)))
   
   requestNr = requestNr + 1
@@ -622,27 +623,32 @@ function M.connect(host, port)
   if not connected then 
     sessionID = {}
     requestNr = 0
-    sock = assert(socket.connect(host, port))
-    sock:settimeout(2)
-    
-    local size, data_arr = M_sock_send_receive(C3_COMMAND_CONNECT)
-    assert(size == 4)
-    
-    sessionID[1] = data_arr[2] --Second byte is MSB
-    sessionID[2] = data_arr[1] --First byte is LSB
-    connected = true
+
+    sock = socket.tcp()
+    success, err = sock:connect(host, port)
+    if success then
+      sock:settimeout(2)
+      
+      local size, data_arr = M_sock_send_receive(C3_COMMAND_CONNECT)
+      assert(size == 4)
+      
+      sessionID[1] = data_arr[2] --Second byte is MSB
+      sessionID[2] = data_arr[1] --First byte is LSB
+      connected = true
+    end
   end
   
-  return connected
+  return connected, err
 end
 
 function M.disconnect()
   if connected then
     M_sock_send_receive_data(C3_COMMAND_DISCONNECT)
-    sock:close()
+    pcall(sock:close())
 
     sessionID = {}
     requestNr = 0
+    connected = false
   end
 end
 

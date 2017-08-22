@@ -12,23 +12,27 @@ end
 C3.set_debug(false)
 
 print("Connecting to " .. c3_ip .. " ... ")
-C3.connect(c3_ip)
-print("SessionId: " .. C3.SessionId())
-
-while true do
+local connected, err = C3.connect(c3_ip)
+if connected then
+  print("SessionId: " .. C3.SessionId())
   print("Press Ctrl-C to stop.")
-  local rtlogs = C3.getRTLog()
-  print("Received RT logs:" .. #rtlogs)
-  
-  for n,rtlog in pairs(rtlogs) do
-    print(n)
-    rtlog.print()
+
+  while true do
+    local rtlogs = C3.getRTLog()
+    print("Received RT logs:" .. #rtlogs)
+    
+    for n,rtlog in pairs(rtlogs) do
+      print(n)
+      rtlog.print()
+    end
+
+    if not pcall(socket.sleep, 15) then
+      break
+    end
   end
 
-  if not pcall(socket.sleep, 15) then
-    break
-  end
+  C3.disconnect()
+  print("Disconnected.")
+else 
+  error("Connection failed:" .. err, 0)
 end
-
-C3.disconnect()
-print("Disconnected ...")
