@@ -28,7 +28,7 @@ end
 
 -- Try to use whatever bit-manipulation library that is available
 local bit, name_ = requireany('bit', 'nixio.bit', 'bit32', 'bit.numberlua')
-
+M.bit = bit -- Export bit library used on this module
 
 function M.crc_16_byte(byte, crc)
 
