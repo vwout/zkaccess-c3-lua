@@ -1,6 +1,5 @@
 require "lunit"
-require "utils"
-local CRC = require 'crc16'
+local CRC = require 'crc16.crc16'
 
 module("crc16_test", lunit.testcase, package.seeall)
 

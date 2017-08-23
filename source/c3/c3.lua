@@ -1,7 +1,7 @@
 -- Imports
 local socket = require("socket")
-local CRC = require("crc16")
-require "utils"
+local CRC = require("crc16.crc16")
+require "C3.utils"
 
 
 -- Defaults

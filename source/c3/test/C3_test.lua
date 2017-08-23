@@ -1,6 +1,6 @@
 require "lunit"
-require "utils"
-local C3 = require("C3")
+require "c3.utils"
+local C3 = require("c3.c3")
 
 module("c3_test", lunit.testcase, package.seeall)
 
