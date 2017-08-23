@@ -8,7 +8,8 @@ RUN apt-get update -y \
  && rm -rf /var/lib/apt/lists/*
 
 RUN luarocks install luasocket \
- && luarocks install lunit
+ && luarocks install lunit \
+ && luarocks install luacheck
 
 RUN mkdir /source
 VOLUME ["/source"]
