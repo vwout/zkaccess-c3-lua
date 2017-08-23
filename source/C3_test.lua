@@ -68,6 +68,9 @@ function test_c3_rtlog_decode()
   assert_equal(1501491250, rtlogs[1].time_second) -- Mon Jul 31 08:54:10 2017
   assert_equal(1501531508, rtlogs[7].time_second) -- Mon Jul 31 20:05:08 2017
   for n,rtlog in pairs(rtlogs) do
+    assert_false(rtlog.is_dastatus())
+    assert_true(rtlog.is_event())
+
     print(n)
     rtlog.print()
   end
@@ -97,6 +100,9 @@ function test_c3_rtlog_decode_status()
   assert_nil(rtlogs[2].is_open(2))
   
   for n,rtlog in pairs(rtlogs) do
+    assert_true(rtlog.is_dastatus())
+    assert_false(rtlog.is_event())
+
     print(n)
     rtlog.print()
   end

@@ -9,12 +9,12 @@ if c3_ip == nil then
   os.exit(0)
 end
 
-C3.set_debug(false)
+C3.setDebug(false)
 
 print("Connecting to " .. c3_ip .. " ... ")
 local connected, err = C3.connect(c3_ip)
 if connected then
-  print("SessionId: " .. C3.SessionId())
+  print("SessionId: " .. C3.getSessionId())
   print("Press Ctrl-C to stop.")
 
   while true do

@@ -332,6 +332,14 @@ local function RTDAStatusRecord()
     time_second  = 0
   }
 
+  function self.is_dastatus()
+    return true
+  end
+
+  function self.is_event()
+    return false
+  end
+  
   function self.from_byte_array(data_arr, from_idx)
     self.alarm_status = { [1] = data_arr[from_idx + 0], [2] = data_arr[from_idx + 1], [3] = data_arr[from_idx + 2], [4] = data_arr[from_idx + 3] }
     self.dss_status   = { [1] = data_arr[from_idx + 4], [2] = data_arr[from_idx + 5], [3] = data_arr[from_idx + 6], [4] = data_arr[from_idx + 7] }
@@ -465,6 +473,14 @@ local function RTEventRecord()
     in_out_state = C3_INOUT_STATUS_NONE,
     time_second  = 0
   }
+
+  function self.is_dastatus()
+    return false
+  end
+
+  function self.is_event()
+    return true
+  end
 
   function self.from_byte_array(data_arr, from_idx)
     self.card_no      = bytes_to_num({ data_arr[from_idx + 3], data_arr[from_idx + 2], data_arr[from_idx + 1], data_arr[from_idx + 0] })
@@ -626,11 +642,11 @@ local function M_sock_send_receive_data(command, send_data)
   return size,receive_data
 end
 
-function M.set_debug(debug_on_off)
+function M.setDebug(debug_on_off)
   debug_enabled = debug_on_off
 end
 
-function M.SessionId()
+function M.getSessionId()
   return bytes_to_num(sessionID)
 end
 
