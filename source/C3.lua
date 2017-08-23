@@ -1,6 +1,6 @@
 -- Imports
 local socket = require("socket")
-local CRC = require("crc_16")
+local CRC = require("crc16")
 require "utils"
 
 
@@ -573,7 +573,7 @@ local function M_get_message(data_arr)
     message_payload[i-1] = data_arr[i]
   end
 
-  local checksum = CRC.crc_16(message_payload)
+  local checksum = CRC.crc16(message_payload)
   assert(CRC.lsb(checksum) == data_arr[#data_arr-2])
   assert(CRC.msb(checksum) == data_arr[#data_arr-1])
 
@@ -605,7 +605,7 @@ local function M_sock_send_data(command, data)
     end
   end
 
-  local checksum = CRC.crc_16(message)
+  local checksum = CRC.crc16(message)
   table.insert(message, CRC.lsb(checksum))
   table.insert(message, CRC.msb(checksum))
 

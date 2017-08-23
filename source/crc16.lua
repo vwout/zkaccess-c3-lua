@@ -5,7 +5,7 @@ local CRC_POLY_16 = 0xA001
 local CRC_START_16 = 0x0000
 
 
-local M = {_TYPE='module', _NAME='crc_16', _VERSION='0.1'}
+local M = {_TYPE='module', _NAME='crc16', _VERSION='0.1'}
 
 
 --[[
@@ -30,7 +30,7 @@ end
 local bit, name_ = requireany('bit', 'nixio.bit', 'bit32', 'bit.numberlua')
 M.bit = bit -- Export bit library used on this module
 
-function M.crc_16_byte(byte, crc)
+function M.crc16_byte(byte, crc)
 
   local function calc_divisor(byte)
     local poly = 0
@@ -56,44 +56,44 @@ function M.crc_16_byte(byte, crc)
 
   return crc --bit.band(crc, 0xFFFF)
 end
-local M_crc_16_byte = M.crc_16_byte
+local M_crc16_byte = M.crc16_byte
 
 
-function M.crc_16_string(str, crc)
+function M.crc16_string(str, crc)
   crc = crc or CRC_START_16
 
   for i = 1, #str do
-    crc = M_crc_16_byte(string.byte(str, i), crc)
+    crc = M_crc16_byte(string.byte(str, i), crc)
   end
 
   return crc
 end
-local M_crc_16_string = M.crc_16_string
+local M_crc16_string = M.crc16_string
 
 
-function M.crc_16_byte_array(byte_array, crc)
+function M.crc16_byte_array(byte_array, crc)
   crc = crc or CRC_START_16
 
   for _,byte in ipairs(byte_array) do
     if type(byte) == 'string' then
-      crc = M_crc_16_string(byte, crc)
+      crc = M_crc16_string(byte, crc)
     else
-      crc = M_crc_16_byte(byte, crc)
+      crc = M_crc16_byte(byte, crc)
     end
   end
 
   return crc
 end
-local M_crc_16_byte_array = M.crc_16_byte_array
+local M_crc16_byte_array = M.crc16_byte_array
 
 
-function M.crc_16(data, crc)
+function M.crc16(data, crc)
   if type(data) == 'string' then
-    return M_crc_16_string(data, crc)
+    return M_crc16_string(data, crc)
   elseif type(data) == 'table' then
-    return M_crc_16_byte_array(data, crc)
+    return M_crc16_byte_array(data, crc)
   else
-    return M_crc_16_byte(data, crc)
+    return M_crc16_byte(data, crc)
   end
 end
 
