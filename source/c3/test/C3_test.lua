@@ -1,23 +1,24 @@
-require "lunit"
-require "c3.utils"
+-- luacheck: no max line length
+
+local lunit = require("lunit")
 local C3 = require("c3.c3")
 
 module("c3_test", lunit.testcase, package.seeall)
 
-function assert_table_equal(expected, actual)
-  assert_table(expected)
-  assert_table(actual)
+function lunit.assert_table_equal(expected, actual)
+  lunit.assert_table(expected)
+  lunit.assert_table(actual)
 
-  assert_equal(#expected, #actual)
+  lunit.assert_equal(#expected, #actual)
   for i = 1, #expected do
-    assert_equal(expected[i], actual[i], "Mismatch at entry " .. i)
+    lunit.assert_equal(expected[i], actual[i], "Mismatch at entry " .. i)
   end
 end
 
 
 function test_c3_time_decode()
-  assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), C3.byte_array_to_time({0x21, 0xad, 0x99, 0x30}))
-  assert_equal(os.time({year=2013, month=10, day=8, hour=14, min=38, sec=32}),  C3.byte_array_to_time({0x1a, 0x61, 0x70, 0xe8}))
+  lunit.assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), C3.byte_array_to_time({0x21, 0xad, 0x99, 0x30}))
+  lunit.assert_equal(os.time({year=2013, month=10, day=8, hour=14, min=38, sec=32}),  C3.byte_array_to_time({0x1a, 0x61, 0x70, 0xe8}))
 end
 
 function test_c3_tableconfig_decode()
@@ -41,13 +42,13 @@ function test_c3_tableconfig_decode()
     config.print()
     config_count = config_count + 1
   end
-  assert_equal(13, config_count)
-  assert_equal(1, configs['user'].id)
-  assert_equal(5, configs['transaction'].id)
-  assert_equal('DoorID', configs['transaction'].fields[4].name)
-  assert_equal('i', configs['transaction'].fields[4].fmt)
-  assert_equal('s', configs['wiegandfmt'].fields[4].fmt)
-  assert_equal('FriTime2', configs['timezone'].fields[18].name)
+  lunit.assert_equal(13, config_count)
+  lunit.assert_equal(1, configs['user'].id)
+  lunit.assert_equal(5, configs['transaction'].id)
+  lunit.assert_equal('DoorID', configs['transaction'].fields[4].name)
+  lunit.assert_equal('i', configs['transaction'].fields[4].fmt)
+  lunit.assert_equal('s', configs['wiegandfmt'].fields[4].fmt)
+  lunit.assert_equal('FriTime2', configs['timezone'].fields[18].name)
 
 end
 
@@ -64,12 +65,12 @@ function test_c3_rtlog_decode()
                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc8, 0x01, 0xc9, 0x02, 0x9d, 0x2c, 0xaf, 0x21 }
   local rtlogs = C3.rtlog_decode(rtlog_raw_data)
 
-  assert_equal(10, #rtlogs)
-  assert_equal(1501491250, rtlogs[1].time_second) -- Mon Jul 31 08:54:10 2017
-  assert_equal(1501531508, rtlogs[7].time_second) -- Mon Jul 31 20:05:08 2017
+  lunit.assert_equal(10, #rtlogs)
+  lunit.assert_equal(1501491250, rtlogs[1].time_second) -- Mon Jul 31 08:54:10 2017
+  lunit.assert_equal(1501531508, rtlogs[7].time_second) -- Mon Jul 31 20:05:08 2017
   for n,rtlog in pairs(rtlogs) do
-    assert_false(rtlog.is_dastatus())
-    assert_true(rtlog.is_event())
+    lunit.assert_false(rtlog.is_dastatus())
+    lunit.assert_true(rtlog.is_event())
 
     print(n)
     rtlog.print()
@@ -86,22 +87,22 @@ function test_c3_rtlog_decode_status()
 
   local rtlogs = C3.rtlog_decode(rtlog_raw_data)
 
-  assert_equal(2, #rtlogs)
-  assert_not_nil(next(rtlogs[1].get_alarms()))
-  assert_true(rtlogs[2].has_alarm())
-  assert_true(rtlogs[1].has_alarm(1))
-  assert_false(rtlogs[1].has_alarm(2))
-  assert_true(rtlogs[1].has_alarm(1, 1))
-  assert_true(rtlogs[1].has_alarm(1, 2))
-  assert_false(rtlogs[1].has_alarm(1, 3))
-  assert_nil(rtlogs[1].is_open(1))
-  assert_nil(rtlogs[1].is_open(3))
-  assert_true(rtlogs[2].is_open(1))
-  assert_nil(rtlogs[2].is_open(2))
+  lunit.assert_equal(2, #rtlogs)
+  lunit.assert_not_nil(next(rtlogs[1].get_alarms()))
+  lunit.assert_true(rtlogs[2].has_alarm())
+  lunit.assert_true(rtlogs[1].has_alarm(1))
+  lunit.assert_false(rtlogs[1].has_alarm(2))
+  lunit.assert_true(rtlogs[1].has_alarm(1, 1))
+  lunit.assert_true(rtlogs[1].has_alarm(1, 2))
+  lunit.assert_false(rtlogs[1].has_alarm(1, 3))
+  lunit.assert_nil(rtlogs[1].is_open(1))
+  lunit.assert_nil(rtlogs[1].is_open(3))
+  lunit.assert_true(rtlogs[2].is_open(1))
+  lunit.assert_nil(rtlogs[2].is_open(2))
 
   for n,rtlog in pairs(rtlogs) do
-    assert_true(rtlog.is_dastatus())
-    assert_false(rtlog.is_event())
+    lunit.assert_true(rtlog.is_dastatus())
+    lunit.assert_false(rtlog.is_event())
 
     print(n)
     rtlog.print()
@@ -111,28 +112,28 @@ end
 
 function test_c3_device_control_message_output()
   local output_operation = C3.ControlDeviceOutput(1, 1, 200)
-  assert_table(output_operation)
-  assert_table_equal({0x01, 0x01, 0x01, 0xc8, 0x00}, output_operation.to_byte_array())
+  lunit.assert_table(output_operation)
+  lunit.assert_table_equal({0x01, 0x01, 0x01, 0xc8, 0x00}, output_operation.to_byte_array())
   output_operation.print()
 end
 
 function test_c3_device_control_message_cancel()
   local output_operation = C3.ControlDeviceCancelAlarm()
-  assert_table(output_operation)
-  assert_table_equal({0x02, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
+  lunit.assert_table(output_operation)
+  lunit.assert_table_equal({0x02, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
   output_operation.print()
 end
 
 function test_c3_device_control_message_restart()
   local output_operation = C3.ControlDeviceRestartDevice()
-  assert_table(output_operation)
-  assert_table_equal({0x03, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
+  lunit.assert_table(output_operation)
+  lunit.assert_table_equal({0x03, 0x00, 0x00, 0x00, 0x00}, output_operation.to_byte_array())
   output_operation.print()
 end
 
 function test_c3_device_control_message_nostate()
   local output_operation = C3.ControlDeviceNOState(2, 1)
-  assert_table(output_operation)
-  assert_table_equal({0x04, 0x02, 0x01, 0x00, 0x00}, output_operation.to_byte_array())
+  lunit.assert_table(output_operation)
+  lunit.assert_table_equal({0x04, 0x02, 0x01, 0x00, 0x00}, output_operation.to_byte_array())
   output_operation.print()
 end

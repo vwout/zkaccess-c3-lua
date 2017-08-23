@@ -1,6 +1,6 @@
 #!/usr/bin/env lua5.1
 
-require 'socket' -- for having a sleep function
+local socket = require("socket")  -- for having a sleep function
 local C3 = require("c3.c3")
 
 local c3_ip = arg[1]
@@ -19,10 +19,10 @@ if connected then
 
   while true do
     local has_da_status = false
-    
+
     local rtlogs = C3.getRTLog()
     print("Received RT logs:" .. #rtlogs)
-    
+
     for n,rtlog in pairs(rtlogs) do
       has_da_status = has_da_status or rtlog.is_dastatus()
       print(n)
@@ -38,6 +38,6 @@ if connected then
 
   C3.disconnect()
   print("Disconnected.")
-else 
+else
   error("Connection failed:" .. err, 0)
 end

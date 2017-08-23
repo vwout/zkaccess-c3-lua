@@ -1,7 +1,7 @@
 -- Imports
 local socket = require("socket")
 local CRC = require("crc16.crc16")
-require "C3.utils"
+local utils = require("C3.utils")
 
 
 -- Defaults
@@ -324,7 +324,8 @@ end
 -- Unused (byte 11):                                         |
 --                                                           00
 --                                                              |
--- Time_second (byte 12-15)                                     a5:ad:ad:21 => (big endian:) 21ADADA5 = 2017-7-30 16:51:49
+-- Time_second (byte 12-15)                                     a5:ad:ad:21 => (big endian:) 21ADADA5 =
+--                                                                                           2017-7-30 16:51:49
 local function RTDAStatusRecord()
   local self = {
     alarm_status = 0,
@@ -614,7 +615,7 @@ local function M_sock_send_data(command, data)
 
   dump_message_arr("M_sock_send_data", message)
   -- TODO: Replace assert by pcall and handle error
-  local bytes_written = assert(sock:send(arr_to_str(message)))
+  local bytes_written = assert(sock:send(utils.arr_to_str(message)))
 
   requestNr = requestNr + 1
 
@@ -625,7 +626,7 @@ local function M_sock_receive_data(expected_command)
   -- Get the first 5 bytes
   -- TODO: Replace assert by pcall and handle error
   local header_str, _ = assert(sock:receive(5))
-  local header_arr = str_to_arr(header_str)
+  local header_arr = utils.str_to_arr(header_str)
 
   --dump_message_arr("M_sock_receive_data Header", header_arr)
   local received_command, size = M_get_message_header(header_arr)
@@ -634,7 +635,7 @@ local function M_sock_receive_data(expected_command)
   -- Get the message data and signature
   -- TODO: Replace assert by pcall and handle error
   local payload_str, _ = assert(sock:receive(size + 3))
-  local payload_arr = str_to_arr(payload_str, header_arr)
+  local payload_arr = utils.str_to_arr(payload_str, header_arr)
 
   dump_message_arr("M_sock_receive_data Header with payload", payload_arr)
 
@@ -712,7 +713,7 @@ function M.datatableconfig_decode(data_arr)
   --   user=1,UID=i1,CardNo=i2,Pin=i3,Password=s4,Group=i5,StartTime=i6,EndTime=i7,Name=s8,SuperAuthorize=i9
   --   userauthorize=2,Pin=i1,AuthorizeTimezoneId=i2,AuthorizeDoorId=i3
 
-  local data_str = arr_to_str(data_arr)
+  local data_str = utils.arr_to_str(data_arr)
   local table_configs = {}
 
   local function DataTableConfig(table_name, table_id)
