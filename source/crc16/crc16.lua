@@ -27,27 +27,26 @@ local function requireany(...)
 end
 
 -- Try to use whatever bit-manipulation library that is available
-local bit, name_ = requireany('bit', 'nixio.bit', 'bit32', 'bit.numberlua')
+local bit, _ = requireany('bit', 'nixio.bit', 'bit32', 'bit.numberlua')
 M.bit = bit -- Export bit library used on this module
 
-function M.crc16_byte(byte, crc)
+local function calc_divisor(byte)
+  local poly = 0
 
-  local function calc_divisor(byte)
-    local poly = 0
+  for _ = 0, 7 do
+      if bit.band(bit.bxor(poly, byte), 0x0001) == 1 then
+          poly = bit.bxor(bit.rshift(poly, 1), CRC_POLY_16)
+      else
+          poly = bit.rshift(poly, 1)
+      end
 
-    for i = 0, 7 do
-        if bit.band(bit.bxor(poly, byte), 0x0001) == 1 then
-            poly = bit.bxor(bit.rshift(poly, 1), CRC_POLY_16)
-        else
-            poly = bit.rshift(poly, 1)
-        end
-
-        byte = bit.rshift(byte, 1)
-    end
-
-    return poly --bit.band(poly, 0xFFFF)     -- Truncate to 16bit
+      byte = bit.rshift(byte, 1)
   end
 
+  return poly --bit.band(poly, 0xFFFF)     -- Truncate to 16bit
+end
+
+function M.crc16_byte(byte, crc)
   crc = bit.band(crc, 0xFFFF)   -- Truncate to 16bit
   local msb = bit.rshift(crc, 8)      -- Take msb from 16bit crc
   local crc_div = calc_divisor(bit.bxor(crc, byte))

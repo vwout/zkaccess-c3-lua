@@ -2,6 +2,7 @@
 
 local lunit = require("lunit")
 local C3 = require("c3.c3")
+local utils = require("c3.utils")
 
 module("c3_test", lunit.testcase, package.seeall)
 
@@ -17,8 +18,8 @@ end
 
 
 function test_c3_time_decode()
-  lunit.assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), C3.byte_array_to_time({0x21, 0xad, 0x99, 0x30}))
-  lunit.assert_equal(os.time({year=2013, month=10, day=8, hour=14, min=38, sec=32}),  C3.byte_array_to_time({0x1a, 0x61, 0x70, 0xe8}))
+  lunit.assert_equal(os.time({year=2017, month=07, day=30, hour=15, min=24, sec=32}), utils.byte_array_to_time({0x21, 0xad, 0x99, 0x30}))
+  lunit.assert_equal(os.time({year=2013, month=10, day=8, hour=14, min=38, sec=32}),  utils.byte_array_to_time({0x1a, 0x61, 0x70, 0xe8}))
 end
 
 function test_c3_tableconfig_decode()
