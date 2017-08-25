@@ -25,7 +25,7 @@ elseif arg[3] == "close" then
   c3_open = false
 end
 
-local c3_duration = tonumber(arg[4]) or 180
+local c3_duration = tonumber(arg[4]) or 10
 
 if c3_ip and next(c3_doors) and c3_open ~= nil then
   C3.setDebug(false)
