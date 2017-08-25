@@ -21,7 +21,7 @@ local ControlDevice = {}
 --   Param 1: Door number or auxiliary output number
 --   Param 2: The address type of output operation (1: Door ouptput, 2: Auxiliary output)
 --   Param 3: Duration of the open operation, only for address type = 1 (door output).
---            0: disable, 255: normal open state, 1~254: normal open duration
+--            0: close, 255: normal open state, 1~254: normal open duration
 -- Operation 2: Cancel alarm
 --   Param 1: 0 (null)
 --   Param 2: 0 (null)
