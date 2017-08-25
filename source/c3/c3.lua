@@ -289,7 +289,7 @@ function M.controlDevice(control_command_object)
   assert(connected)
 
   M_sock_send_receive_data(consts.C3_COMMAND_CONTROL,
-                           control_command_object.to_byte_array)
+                           control_command_object.to_byte_array())
 end
 
 return M
