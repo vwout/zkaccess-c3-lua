@@ -1,11 +1,11 @@
-# C3-lua
-A Lua library for communicating with the ZKAccess C3 Access Control Panels.
+# c3-lua
+A native Lua library for communicating with the ZKAccess C3 Access Control Panels.
 
-This library intends to implement the same functionality as provided by the ZKAccess C3 PullSDK.
+This library intends to implement the same functionality as provided by the ZKAccess C3 PullSDK API.
 
 ## Usage
 ```
-local C3 = require("C3")
+local C3 = require("c3.c3")
 
 C3.connect("1.1.1.1")
 print("SessionId: " .. C3.SessionId())
@@ -21,7 +21,7 @@ Byte        | 0      | 1       | 2       | 3          | 4          | 5,6,7,8, ..
 **Meaning** | Start  | Version | Command | Length Lsb | Length Msb | Data          | Checksum | End
 **Value**   | `0xAA` | `0x01`  |         |            |            |               |          | `0x55`
 
-The start bytes 0, 1 and last byte have a fixed value. 
+The start bytes 0, 1 and last byte have a fixed value.
 The *Command* is one of the following (only listing commands supported by this library)
 
 Code   | Command
@@ -50,7 +50,7 @@ The *Checksum* is a CRC-16 checksum calculated over the full message excluding t
 connect(host, port)
 ```
 
-The method is used to connect a C3 device using TCP. RS485 is not supported. Neither is using a password to secure the connection. This method must be called before any other method and initializes a C3 session. 
+The method is used to connect a C3 device using TCP. RS485 is not supported. Neither is using a password to secure the connection. This method must be called before any other method and initializes a C3 session.
 Returns true in case of a successful connection.
 
 ### disconnect
@@ -89,4 +89,4 @@ Sends a control command to the access panel to perform an action on the requipme
 set_debug(debug_on_off)
 ```
 
-Sets or unsets debug mode. In debug mode, the library prints a lot of detailed internal information, specifically regarding protocol binaries.
+Sets or unsets debug mode. In debug mode, the library prints a lot of detailed internal information, specifically regarding protocol binary data.
