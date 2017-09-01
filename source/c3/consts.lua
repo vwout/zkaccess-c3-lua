@@ -10,6 +10,7 @@ consts.C3_MESSAGE_END          = 0x55
 consts.C3_PROTOCOL_VERSION     = 0x01
 consts.C3_COMMAND_CONNECT      = { request=0x76, reply=0xC8 }
 consts.C3_COMMAND_DISCONNECT   = { request=0x02, reply=0xC8 }
+consts.C3_COMMAND_GETPARAM     = { request=0x04, reply=0xC8 }
 consts.C3_COMMAND_DATATABLECFG = { request=0x06, reply=0xC8 }
 consts.C3_COMMAND_CONTROL      = { request=0x05, reply=0xC8 }
 consts.C3_COMMAND_RTLOG        = { request=0x0B, reply=0xC8 }

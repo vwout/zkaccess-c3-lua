@@ -285,6 +285,37 @@ function M.getRTLog()
   return M.rtlog_decode(data_arr)
 end
 
+function M.param_decode(data_arr)
+  assert(data_arr)
+
+  local param_data = {}
+  local param_str = utils.arr_to_str(data_arr)
+  for k, v in string.gmatch(param_str, "([%w~]+)=(%w+)") do
+    param_data[k] = v
+  end
+
+  return param_data
+end
+
+function M.getDeviceParameters(params_arr)
+  assert(connected)
+
+  local param_data = ""
+  for i,param in ipairs(params_arr) do
+    if i == 1 then
+      param_data = param_data .. param
+    elseif i <= 30 then
+      param_data = param_data .. "," .. param
+    else
+      break
+    end
+  end
+
+  local _, data_arr = M_sock_send_receive_data(consts.C3_COMMAND_GETPARAM,
+                                               utils.str_to_arr(param_data))
+  return M.param_decode(data_arr)
+end
+
 function M.controlDevice(control_command_object)
   assert(connected)
 
