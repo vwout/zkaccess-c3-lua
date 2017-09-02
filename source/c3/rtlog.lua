@@ -1,6 +1,6 @@
 local CRC = require("crc16.crc16")
-local utils = require("C3.utils")
-local consts = require("C3.consts")
+local utils = require("c3.utils")
+local consts = require("c3.consts")
 
 
 local RTLog = {}

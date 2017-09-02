@@ -1,10 +1,10 @@
 -- Imports
 local socket = require("socket")
 local CRC = require("crc16.crc16")
-local ControlDevice = require("C3.controldevice")
-local RTLog = require("C3.rtlog")
-local consts = require("C3.consts")
-local utils = require("C3.utils")
+local ControlDevice = require("c3.controldevice")
+local RTLog = require("c3.rtlog")
+local consts = require("c3.consts")
+local utils = require("c3.utils")
 
 
 local debug_enabled = false    -- Internal flag to enable debugging, see M.set_debug()

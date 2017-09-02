@@ -1,7 +1,7 @@
 #!/usr/bin/env lua5.1
 
 local C3 = require("c3.c3")
-local consts = require("C3.consts")
+local consts = require("c3.consts")
 
 if #arg < 3 or #arg > 4 then
   print "Usage: C3_RTLog_demo ip door,door,... open|close [duration=180]"

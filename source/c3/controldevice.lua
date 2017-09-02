@@ -1,4 +1,4 @@
-local consts = require("C3.consts")
+local consts = require("c3.consts")
 
 local ControlDevice = {}
 
