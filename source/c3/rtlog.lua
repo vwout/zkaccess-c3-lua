@@ -58,9 +58,9 @@ function RTLog.DAStatusRecord()
     self.verified     = data_arr[from_idx + 8]
     self.event_type   = data_arr[from_idx + 10]
     self.time_second  = utils.byte_array_to_time({ data_arr[from_idx + 15],
-                                             data_arr[from_idx + 14],
-                                             data_arr[from_idx + 13],
-                                             data_arr[from_idx + 12] })
+                                                   data_arr[from_idx + 14],
+                                                   data_arr[from_idx + 13],
+                                                   data_arr[from_idx + 12] })
 
     return self
   end
@@ -198,21 +198,21 @@ function RTLog.EventRecord()
 
   function self.from_byte_array(data_arr, from_idx)
     self.card_no      = utils.bytes_to_num({ data_arr[from_idx + 3],
-                                       data_arr[from_idx + 2],
-                                       data_arr[from_idx + 1],
-                                       data_arr[from_idx + 0] })
+                                             data_arr[from_idx + 2],
+                                             data_arr[from_idx + 1],
+                                             data_arr[from_idx + 0] })
     self.pin          = utils.bytes_to_num({ data_arr[from_idx + 7],
-                                       data_arr[from_idx + 6],
-                                       data_arr[from_idx + 5],
-                                       data_arr[from_idx + 4] })
+                                             data_arr[from_idx + 6],
+                                             data_arr[from_idx + 5],
+                                             data_arr[from_idx + 4] })
     self.verified     = data_arr[from_idx + 8]
     self.door_id      = data_arr[from_idx + 9]
     self.event_type   = data_arr[from_idx + 10]
     self.in_out_state = data_arr[from_idx + 11]
     self.time_second  = utils.byte_array_to_time({ data_arr[from_idx + 15],
-                                             data_arr[from_idx + 14],
-                                             data_arr[from_idx + 13],
-                                             data_arr[from_idx + 12] })
+                                                   data_arr[from_idx + 14],
+                                                   data_arr[from_idx + 13],
+                                                   data_arr[from_idx + 12] })
 
     return self
   end

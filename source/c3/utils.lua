@@ -65,8 +65,10 @@ end
 -- convert string to table of bytes
 function utils.str_to_arr(str, arr)
   local data = arr or {}
-  for i = 1, #str do
-    data[#data + 1] = string.byte(str, i)
+  if str then
+    for i = 1, #str do
+      data[#data + 1] = string.byte(str, i)
+    end
   end
   return data
 end
@@ -74,8 +76,10 @@ end
 -- convert table of bytes to string
 function utils.arr_to_str(bytes, str)
   local data = str or ""
-  for _,v in ipairs(bytes) do
-    data = data .. string.char(v)
+  if bytes then
+    for _,v in ipairs(bytes) do
+      data = data .. string.char(v)
+    end
   end
   return data
 end

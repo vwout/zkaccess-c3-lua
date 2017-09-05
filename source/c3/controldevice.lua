@@ -35,12 +35,19 @@ local ControlDevice = {}
 --   Param 2: Enable / disable (0: disable, 1: enable'
 --   Param 3: 0 (null)
 local function ControlDeviceBase(_operation, _param1, _param2, _param3)
+  local function tobyte(val)
+    val = tonumber(val) or 0
+    if val < 0   then val = 0   end
+    if val > 255 then val = 255 end
+    return val
+  end
+
   -- the new instance
   local self = {
     operation = _operation or 0,
-    param1    = _param1 or 0,
-    param2    = _param2 or 0,
-    param3    = _param3 or 0,
+    param1    = tobyte(_param1),
+    param2    = tobyte(_param2),
+    param3    = tobyte(_param3),
     param4    = 0
   }
 
