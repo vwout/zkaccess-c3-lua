@@ -17,15 +17,19 @@ local function dump_message_arr(what, message)
       s = s .. utils.num2hex(byte) .. ' '
     end
     print(string.format(". %-40s", what), s)
+    --luup.log(string.format("C3 -- %-40s: %s", what, s))
   end
 end
 
 
 -- Module declaration
-local M = {_TYPE='module', _NAME='C3', _VERSION='0.1'}
+local M = {_TYPE='module', _NAME='c3', _VERSION='0.1'}
 
 -- Private member variables
 local sock = nil            -- Socket for TCP connection to C3 panel
+local luupIO = nil
+local luupIOdata = {}       -- Buffer for receiving asynchonous luup.io data
+local async_callback = nil  -- Internal callback function used for asynchonous data retrieval
 local connected = false
 local sessionID = {}
 local requestNr = 0
@@ -37,12 +41,17 @@ M.ControlDeviceRestartDevice = ControlDevice.RestartDevice
 M.ControlDeviceNOState = ControlDevice.NOState
 
 local function M_get_message_header(data_arr)
-  assert(#data_arr >= 5)
-  assert(data_arr[1] == consts.C3_MESSAGE_START)
-  assert(data_arr[2] == consts.C3_PROTOCOL_VERSION)
+  local command = nil
+  local size    = 0
 
-  local command = data_arr[3]
-  local size    = (data_arr[5] * 255) + data_arr[4]
+  if #data_arr >= 5 then
+    if data_arr[1] == consts.C3_MESSAGE_START and
+       data_arr[2] == consts.C3_PROTOCOL_VERSION then
+
+      command = data_arr[3]
+      size    = (data_arr[5] * 255) + data_arr[4]
+    end
+  end
 
   return command, size
 end
@@ -66,6 +75,56 @@ local function M_get_message(data_arr)
   end
 
   return message_payload
+end
+
+local function M_sock_send(bytes)
+  local result = nil
+  
+  if sock then
+    result = sock:send(bytes)
+  elseif luupIO then
+    -- Clear receive buffer
+    luupIOdata = {}
+    result = luup.io.write(bytes, luupIO)
+  end
+  
+  return result
+end
+
+local function M_sock_receive(bytes)
+  local result = nil
+  
+  if sock then
+    result = sock:receive(bytes)
+  elseif luupIO then
+    -- result is returned asynchronously via M_sock_receive_async
+  end
+  
+  return result
+end
+
+function M.sock_receive_async(data_str)
+  local full_message = false
+  local async_result = nil
+  
+  luupIOdata = utils.str_to_arr(data_str, luupIOdata)
+  
+  local command, size = M_get_message_header(luupIOdata)
+  local message_size = 5 + size + 3
+  if #luupIOdata == message_size then
+    dump_message_arr("M.sock_receive_async Header with payload", luupIOdata)
+
+    local data_arr = M_get_message(luupIOdata)
+
+    dump_message_arr("M.sock_receive_async Data", data_arr)
+      
+    if async_callback then
+      command, async_result = async_callback(size, data_arr)
+    end
+    full_message = true
+  end
+
+  return full_message, command, async_result
 end
 
 local function M_sock_send_data(command, data)
@@ -96,53 +155,100 @@ local function M_sock_send_data(command, data)
   table.insert(message,    consts.C3_MESSAGE_END)
 
   dump_message_arr("M_sock_send_data", message)
-  -- TODO: Replace assert by pcall and handle error
-  local bytes_written = assert(sock:send(utils.arr_to_str(message)))
 
-  requestNr = requestNr + 1
+  local ok, bytes_written, _ = pcall(M_sock_send, utils.arr_to_str(message))
+  if ok then
+    requestNr = requestNr + 1
+  else
+    print(string.format("Sending data failed: %s (sessionId: %d)", bytes_written, utils.bytes_to_num(sessionID)))
+    bytes_written = 0
+  end
 
   return bytes_written
 end
 
 local function M_sock_receive_data(expected_command)
+  local size = 0
+  local data_arr = {}
+
   -- Get the first 5 bytes
-  -- TODO: Replace assert by pcall and handle error
-  local header_str, _ = assert(sock:receive(5))
-  local header_arr = utils.str_to_arr(header_str)
+  local ok, header_str, _ = pcall(M_sock_receive, 5)
+  if ok then
+    local header_arr = utils.str_to_arr(header_str)
 
-  --dump_message_arr("M_sock_receive_data Header", header_arr)
-  local received_command, size = M_get_message_header(header_arr)
-  assert(received_command == expected_command.reply)
+    --dump_message_arr("M_sock_receive_data Header", header_arr)
+    local received_command
+    received_command, size = M_get_message_header(header_arr)
+    if received_command == expected_command.reply then
+      -- Get the message data and signature
+      -- TODO: Replace assert by pcall and handle error
+      local payload_str, _ = assert(sock:receive(size + 3))
+      local payload_arr = utils.str_to_arr(payload_str, header_arr)
 
-  -- Get the message data and signature
-  -- TODO: Replace assert by pcall and handle error
-  local payload_str, _ = assert(sock:receive(size + 3))
-  local payload_arr = utils.str_to_arr(payload_str, header_arr)
+      dump_message_arr("M_sock_receive_data Header with payload", payload_arr)
 
-  dump_message_arr("M_sock_receive_data Header with payload", payload_arr)
+      data_arr = M_get_message(payload_arr)
+      assert(size == #data_arr)
 
-  local data_arr = M_get_message(payload_arr)
-  assert(size == #data_arr)
-
-  dump_message_arr("M_sock_receive_data Data", data_arr)
+      dump_message_arr("M_sock_receive_data Data", data_arr)
+    else
+      print(string.format("Receiving data failed: expected command %i, received %i (sessionId: %d)",
+            received_command or 0, expected_command.reply, utils.bytes_to_num(sessionID)))
+    end
+  else
+    print(string.format("Receiving data failed: %s (sessionId: %d)", header_str, utils.bytes_to_num(sessionID)))
+  end
 
   return size, data_arr
 end
 
-local function M_sock_send_receive(command, send_data)
-  M_sock_send_data(command, send_data)
-  return M_sock_receive_data(command)
-end
+local function M_sock_send_receive(command, send_data, callback)
+  local bytes_received = 0
+  local receive_data = nil
 
-local function M_sock_send_receive_data(command, send_data)
-  local size,receive_data = M_sock_send_receive(command, send_data)
+  local bytes_written = M_sock_send_data(command, send_data)
+  if bytes_written then
+    if not luupIO then
+      bytes_received, receive_data = M_sock_receive_data(command)
+      if callback then
+        callback(bytes_received, receive_data)
+      end
+    elseif callback then
+      -- return a callback wrapper that returns the command,
+      -- followed by the result of the callback
+      local M_sock_send_receive_cb_wrapper = function(command, callback)
+        return function(size, receive_data)
+            return command.request, callback(size, receive_data)
+          end
+      end
 
-  -- Remove the sessionId (2 bytes) and message counter (2 bytes), to only return the data
-  for _ = 1, 4 do
-    table.remove(receive_data, 1)
+      async_callback = M_sock_send_receive_cb_wrapper(command, callback)
+    else
+      async_callback = nil
+    end
   end
 
-  return size,receive_data
+  return bytes_received, receive_data
+end
+
+local function M_sock_send_receive_data(command, send_data, callback)
+  local M_sock_send_receive_data_cb_wrapper = function(callback)
+    return function(size, receive_data)
+        -- Remove the sessionId (2 bytes) and message counter (2 bytes), to only return the data
+        for _ = 1, 4 do
+          table.remove(receive_data, 1)
+        end
+
+        return callback(size-4, receive_data)
+      end
+  end
+
+  local cb = nil
+  if callback then
+    cb = M_sock_send_receive_data_cb_wrapper(callback)
+  end
+  
+  return M_sock_send_receive(command, send_data, cb)
 end
 
 function M.setDebug(debug_on_off)
@@ -151,6 +257,20 @@ end
 
 function M.getSessionId()
   return utils.bytes_to_num(sessionID)
+end
+
+local function M_connect_to_C3_cb(size, data_arr)
+  if size == 4 then
+    sessionID[1] = data_arr[2] --Second byte is MSB
+    sessionID[2] = data_arr[1] --First byte is LSB
+    connected = true
+  end
+  
+  return connected
+end
+
+local function M_connect_to_C3()
+  return M_sock_send_receive(consts.C3_COMMAND_CONNECT, nil, M_connect_to_C3_cb)
 end
 
 function M.connect(host, port)
@@ -167,28 +287,43 @@ function M.connect(host, port)
     success, err = sock:connect(host, port)
     if success then
       sock:settimeout(2)
-
-      local size, data_arr = M_sock_send_receive(consts.C3_COMMAND_CONNECT)
-      assert(size == 4)
-
-      sessionID[1] = data_arr[2] --Second byte is MSB
-      sessionID[2] = data_arr[1] --First byte is LSB
-      connected = true
+      M_connect_to_C3()
     end
   end
 
   return connected, err
 end
 
+function M.connectLuupIO(deviceId, host, port)
+  luupIO = deviceId
+  
+  if not luup.io.is_connected(luupIO) then
+    luup.io.open(luupIO, host, port)
+  end
+  
+  sessionID = {}
+  requestNr = 0
+
+  M_connect_to_C3()
+  
+  return connected, "Connect is asynchronous"
+end
+
 function M.disconnect()
   if connected then
     M_sock_send_receive_data(consts.C3_COMMAND_DISCONNECT)
-    pcall(sock:close())
+    if sock then
+      pcall(sock:close())
+    end
 
     sessionID = {}
     requestNr = 0
     connected = false
   end
+end
+
+function M.connected()
+  return connected
 end
 
 function M.datatableconfig_decode(data_arr)
@@ -256,33 +391,37 @@ function M.getDataTableConfig()
 end
 
 function M.rtlog_decode(data_arr)
-  -- One RT log is 16 bytes
-  -- Ensure the data array is not empty and a multiple of 16
-  assert(data_arr)
-  assert(math.fmod(#data_arr, 16) == 0)
-
   local rtlogs = {}
 
-  for i = 1, #data_arr, 16 do
-    if data_arr[i + 10] == consts.C3_EVENT_TYPE_DOOR_ALARM_STATUS then
-      local rt_status = RTLog.DAStatusRecord()
-      rt_status.from_byte_array(data_arr, i)
-      table.insert(rtlogs, rt_status)
-    else
-      local rt_event = RTLog.EventRecord()
-      rt_event.from_byte_array(data_arr, i)
-      table.insert(rtlogs, rt_event)
+  -- One RT log is 16 bytes
+  -- Ensure the data array is not empty and a multiple of 16
+  if data_arr then
+    if math.fmod(#data_arr, 16) == 0 then
+      for i = 1, #data_arr, 16 do
+        if data_arr[i + 10] == consts.C3_EVENT_TYPE_DOOR_ALARM_STATUS then
+          local rt_status = RTLog.DAStatusRecord()
+          rt_status.from_byte_array(data_arr, i)
+          table.insert(rtlogs, rt_status)
+        else
+          local rt_event = RTLog.EventRecord()
+          rt_event.from_byte_array(data_arr, i)
+          table.insert(rtlogs, rt_event)
+        end
+      end
     end
   end
 
   return rtlogs
 end
 
+function M_getRTLog_cb(size, data_arr)
+  return M.rtlog_decode(data_arr)
+end
+
 function M.getRTLog()
   assert(connected)
 
-  local _, data_arr = M_sock_send_receive_data(consts.C3_COMMAND_RTLOG)
-  return M.rtlog_decode(data_arr)
+  return M_sock_send_receive_data(consts.C3_COMMAND_RTLOG, nil, M_getRTLog_cb)
 end
 
 function M.param_decode(data_arr)
@@ -295,6 +434,10 @@ function M.param_decode(data_arr)
   end
 
   return param_data
+end
+
+function M_getDeviceParameters_cb(size, data_arr)
+  return M.param_decode(data_arr)
 end
 
 function M.getDeviceParameters(params_arr)
@@ -311,9 +454,9 @@ function M.getDeviceParameters(params_arr)
     end
   end
 
-  local _, data_arr = M_sock_send_receive_data(consts.C3_COMMAND_GETPARAM,
-                                               utils.str_to_arr(param_data))
-  return M.param_decode(data_arr)
+  return M_sock_send_receive_data(consts.C3_COMMAND_GETPARAM,
+                                  utils.str_to_arr(param_data),
+                                  M_getDeviceParameters_cb)
 end
 
 function M.controlDevice(control_command_object)
