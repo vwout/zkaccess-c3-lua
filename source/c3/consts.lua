@@ -31,7 +31,8 @@ consts.C3_CONTROL_OUTPUT_ADDRESS  = { [consts.C3_CONTROL_OUTPUT_ADDRESS_DOOR_OUT
                                       [consts.C3_CONTROL_OUTPUT_ADDRESS_AUX_OUTPUT]  = "Auxiliary output" }
 
 -- Event values
-consts.C3_VERIFIED_MODE      = { [1]   = "Only finger",
+consts.C3_VERIFIED_MODE      = { [0]   = "None",
+                                 [1]   = "Only finger",
                                  [3]   = "Only password",
                                  [4]   = "Only card",
                                  [11]  = "Card and password",

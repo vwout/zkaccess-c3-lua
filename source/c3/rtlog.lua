@@ -108,17 +108,19 @@ function RTLog.DAStatusRecord()
     return open
   end
 
-  function self.print()
+  function self.tostring()
+    res_arr = {}
+    
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
         if key == "time_second" then
-          print("", string.format("%-10s", key), value, os.date("%c", value))
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), os.date("%c", value)))
         elseif key == "event_type" then
-          print("", string.format("%-10s", key), value, consts.C3_EVENT_TYPE[value])
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), tostring(consts.C3_EVENT_TYPE[value])))
         elseif key == "verified" then
-          print("", string.format("%-10s", key), value, consts.C3_VERIFIED_MODE[value])
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), consts.C3_VERIFIED_MODE[value or 0]))
         elseif key == "alarm_status" then
-          print("", string.format("%-10s", key))
+          table.insert(res_arr, string.format("%-12s", key))
 
           local function concat_if_in_bitset(bitset, tbl, str_arr)
             str_arr = str_arr or {}
@@ -139,18 +141,24 @@ function RTLog.DAStatusRecord()
           end
 
           for i,v in ipairs(value) do
-            print("", "", string.format("Door %-10i", i), v, concat_if_in_bitset(v, consts.C3_ALARM_STATUS))
+            table.insert(res_arr, string.format("    Door %-2s %-4s %s", i, v, concat_if_in_bitset(v, consts.C3_ALARM_STATUS)))
           end
         elseif key == "dss_status" then
-          print("", string.format("%-10s", key))
+          table.insert(res_arr, string.format("%-12s", key))
           for i,v in ipairs(value) do
-            print("", "", string.format("Door %-10i", i), v, consts.C3_DSS_STATUS[v])
+            table.insert(res_arr, string.format("    Door %-2s %-4s %s", i, v, tostring(consts.C3_DSS_STATUS[v or 0])))
           end
         else
-          print("", string.format("%-10s", key), value)
+          table.insert(res_arr, string.format("%-12s %s", key, value))
         end
       end
     end
+    
+    return table.concat(res_arr, "\n")
+  end
+
+  function self.print()
+    print(self.tostring())
   end
 
   -- return the instance
@@ -217,22 +225,30 @@ function RTLog.EventRecord()
     return self
   end
 
-  function self.print()
+  function self.tostring()
+    res_arr = {}
+    
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
         if key == "time_second" then
-          print("", string.format("%-10s", key), value, os.date("%c", value))
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), os.date("%c", value)))
         elseif key == "in_out_state" then
-          print("", string.format("%-10s", key), value, consts.C3_INOUT_STATUS[value])
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), consts.C3_INOUT_STATUS[value]))
         elseif key == "event_type" then
-          print("", string.format("%-10s", key), value, consts.C3_EVENT_TYPE[value])
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), tostring(consts.C3_EVENT_TYPE[value])))
         elseif key == "verified" then
-          print("", string.format("%-10s", key), value, consts.C3_VERIFIED_MODE[value])
+          table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), consts.C3_VERIFIED_MODE[value or 0]))
         else
-          print("", string.format("%-10s", key), value)
+          table.insert(res_arr, string.format("%-12s %s %s", key, tostring(value)))
         end
       end
     end
+
+    return table.concat(res_arr, "\n")
+  end
+
+  function self.print()
+    print("", self.tostring())
   end
 
   -- return the instance
