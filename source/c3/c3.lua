@@ -192,11 +192,11 @@ local function M_sock_receive_data(expected_command)
 
       dump_message_arr("M_sock_receive_data Data", data_arr)
     else
-      print(string.format("Receiving data failed: expected command %i, received %i (sessionId: %d)",
+      print(string.format("Receiving data failed: received command %i, expected %i (sessionId: %d)",
             received_command or 0, expected_command.reply, utils.bytes_to_num(sessionID)))
     end
   else
-    print(string.format("Receiving data failed: %s (sessionId: %d)", header_str, utils.bytes_to_num(sessionID)))
+    print(string.format("Receiving data failed (incomplete): %s (sessionId: %d)", header_str, utils.bytes_to_num(sessionID)))
   end
 
   return size, data_arr
@@ -205,13 +205,14 @@ end
 local function M_sock_send_receive(command, send_data, callback)
   local bytes_received = 0
   local receive_data = nil
+  local response = nil
 
   local bytes_written = M_sock_send_data(command, send_data)
   if bytes_written then
     if not luupIO then
       bytes_received, receive_data = M_sock_receive_data(command)
       if callback then
-        callback(bytes_received, receive_data)
+        response = callback(bytes_received, receive_data)
       end
     elseif callback then
       -- return a callback wrapper that returns the command,
@@ -228,7 +229,7 @@ local function M_sock_send_receive(command, send_data, callback)
     end
   end
 
-  return bytes_received, receive_data
+  return response, bytes_received, receive_data
 end
 
 local function M_sock_send_receive_data(command, send_data, callback)
