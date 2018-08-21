@@ -6,7 +6,6 @@ local RTLog = require("c3.rtlog")
 local consts = require("c3.consts")
 local utils = require("c3.utils")
 
-
 local debug_enabled = false    -- Internal flag to enable debugging, see M.set_debug()
 
 local function dump_message_arr(what, message)
@@ -20,7 +19,6 @@ local function dump_message_arr(what, message)
     --luup.log(string.format("C3 -- %-40s: %s", what, s))
   end
 end
-
 
 -- Module declaration
 local M = {_TYPE='module', _NAME='c3', _VERSION='0.1'}
@@ -79,7 +77,7 @@ end
 
 local function M_sock_send(bytes)
   local result = nil
-  
+
   if sock then
     result = sock:send(bytes)
   elseif luupIO then
@@ -87,28 +85,28 @@ local function M_sock_send(bytes)
     luupIOdata = {}
     result = luup.io.write(bytes, luupIO)
   end
-  
+
   return result
 end
 
 local function M_sock_receive(bytes)
   local result = nil
-  
+
   if sock then
     result = sock:receive(bytes)
   elseif luupIO then
     -- result is returned asynchronously via M_sock_receive_async
   end
-  
+
   return result
 end
 
 function M.sock_receive_async(data_str)
   local full_message = false
   local async_result = nil
-  
+
   luupIOdata = utils.str_to_arr(data_str, luupIOdata)
-  
+
   local command, size = M_get_message_header(luupIOdata)
   local message_size = 5 + size + 3
   if #luupIOdata == message_size then
@@ -117,7 +115,7 @@ function M.sock_receive_async(data_str)
     local data_arr = M_get_message(luupIOdata)
 
     dump_message_arr("M.sock_receive_async Data", data_arr)
-      
+
     if async_callback then
       command, async_result = async_callback(size, data_arr)
     end
@@ -248,7 +246,7 @@ local function M_sock_send_receive_data(command, send_data, callback)
   if callback then
     cb = M_sock_send_receive_data_cb_wrapper(callback)
   end
-  
+
   return M_sock_send_receive(command, send_data, cb)
 end
 
@@ -266,7 +264,7 @@ local function M_connect_to_C3_cb(size, data_arr)
     sessionID[2] = data_arr[1] --First byte is LSB
     connected = true
   end
-  
+
   return connected
 end
 
@@ -297,16 +295,16 @@ end
 
 function M.connectLuupIO(deviceId, host, port)
   luupIO = deviceId
-  
+
   if not luup.io.is_connected(luupIO) then
     luup.io.open(luupIO, host, port)
   end
-  
+
   sessionID = {}
   requestNr = 0
 
   M_connect_to_C3()
-  
+
   return connected, "Connect is asynchronous"
 end
 

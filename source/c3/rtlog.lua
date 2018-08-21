@@ -2,7 +2,6 @@ local CRC = require("crc16.crc16")
 local utils = require("c3.utils")
 local consts = require("c3.consts")
 
-
 local RTLog = {}
 
 -- An RTLog is a binary message of 16 bytes send by the C3 access panel.
@@ -109,8 +108,8 @@ function RTLog.DAStatusRecord()
   end
 
   function self.tostring()
-    res_arr = {}
-    
+    local res_arr = {}
+
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
         if key == "time_second" then
@@ -153,7 +152,7 @@ function RTLog.DAStatusRecord()
         end
       end
     end
-    
+
     return table.concat(res_arr, "\n")
   end
 
@@ -226,8 +225,8 @@ function RTLog.EventRecord()
   end
 
   function self.tostring()
-    res_arr = {}
-    
+    local res_arr = {}
+
     for key,value in pairs(self) do
       if type(value) ~= 'function' then
         if key == "time_second" then
@@ -239,7 +238,7 @@ function RTLog.EventRecord()
         elseif key == "verified" then
           table.insert(res_arr, string.format("%-12s %-10s %s", key, tostring(value), consts.C3_VERIFIED_MODE[value or 0]))
         else
-          table.insert(res_arr, string.format("%-12s %s %s", key, tostring(value)))
+          table.insert(res_arr, string.format("%-12s %s", key, tostring(value)))
         end
       end
     end
